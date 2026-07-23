@@ -24,7 +24,7 @@ export default async function LeaderboardPage() {
           </div>
         </div>
 
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
+        <h1 className="font-sans font-semibold text-2xl sm:text-3xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
           Frontier AI Model Leaderboard (Mid-2026)
         </h1>
 

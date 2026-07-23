@@ -1,31 +1,12 @@
 import React from "react";
 import VerdictDial from "@/components/ui/verdict-dial";
 import { Sparkles } from "lucide-react";
+import { getShowcaseSamples } from "@/lib/models";
 
-export default function ShowcasePage() {
-  const showcaseItems = [
-    {
-      id: "s1",
-      title: "Realtime Analytics Dashboard",
-      model: "Nova-1",
-      category: "Frontend UI",
-      score: 89.4,
-    },
-    {
-      id: "s2",
-      title: "Canvas Retro Space Shooter",
-      model: "Nova-1",
-      category: "Game Dev",
-      score: 84.1,
-    },
-    {
-      id: "s3",
-      title: "Cyberpunk Isometric City",
-      model: "Nova-1",
-      category: "SVG Art",
-      score: 86.8,
-    },
-  ];
+export const revalidate = 60;
+
+export default async function ShowcasePage() {
+  const showcaseItems = await getShowcaseSamples(6);
 
   return (
     <div className="space-y-8">
@@ -49,13 +30,13 @@ export default function ShowcasePage() {
             className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-5 space-y-4 hover:border-[var(--signal)] transition-colors overflow-hidden flex flex-col justify-between"
           >
             <div className="space-y-3">
-              <div className="h-44 rounded-lg bg-[var(--fog)] border border-[var(--border)] flex flex-col items-center justify-center p-4 text-center">
-                <span className="font-mono text-xs font-bold text-[var(--ink)]">
-                  {item.title}
-                </span>
-                <span className="text-[10px] font-mono text-[var(--mist)] mt-1">
-                  [ Sandboxed Output ]
-                </span>
+              <div className="h-44 rounded-lg bg-[var(--fog)] border border-[var(--border)] overflow-hidden relative">
+                <iframe
+                  srcDoc={item.code}
+                  title={item.title}
+                  className="w-full h-full border-none pointer-events-none scale-90 origin-top-left"
+                  sandbox="allow-scripts"
+                />
               </div>
 
               <div className="flex items-center justify-between">
@@ -64,7 +45,7 @@ export default function ShowcasePage() {
                     {item.title}
                   </h3>
                   <div className="text-xs font-mono text-[var(--mist)]">
-                    Model: {item.model} • Category: {item.category}
+                    Model: {item.model} ({item.provider})
                   </div>
                 </div>
               </div>
@@ -87,3 +68,4 @@ export default function ShowcasePage() {
     </div>
   );
 }
+

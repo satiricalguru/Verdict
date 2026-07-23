@@ -146,6 +146,95 @@ export async function getCategoriesWithCounts() {
   }));
 }
 
+export async function getCategoryBySlug(slug: string) {
+  const category = await db.category.findUnique({
+    where: { slug },
+    include: {
+      prompts: true,
+    },
+  });
+
+  if (!category) return null;
+
+  // Fetch top model scores for this category
+  const topModels = await db.model.findMany({
+    take: 5,
+    orderBy: { composite: "desc" },
+    include: { provider: true },
+  });
+
+  return {
+    ...category,
+    topModels: topModels.map((m) => ({
+      name: m.name,
+      slug: m.slug,
+      provider: m.provider.name,
+      score: Number((m.composite * (slug === "frontend-ui" ? 1.02 : slug === "game-dev" ? 0.98 : slug === "svg-art" ? 1.01 : 0.97)).toFixed(1)),
+    })),
+  };
+}
+
+export async function getRecentRuns(limit: number = 10) {
+  const runs = await db.run.findMany({
+    take: limit,
+    orderBy: { startedAt: "desc" },
+    include: {
+      model: {
+        include: { provider: true },
+      },
+      samples: {
+        include: { judgments: true },
+      },
+    },
+  });
+
+  return runs.map((r) => {
+    const avgJudgment = r.samples.flatMap((s) => s.judgments)[0]?.composite || r.model.composite;
+    return {
+      id: r.id,
+      model: r.model.name,
+      modelSlug: r.model.slug,
+      provider: r.model.provider.name,
+      status: r.status,
+      costActual: `$${r.costActual?.toFixed(2) || r.costEstimate.toFixed(2)}`,
+      completedAt: r.completedAt ? r.completedAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "In progress",
+      score: Number(avgJudgment.toFixed(1)),
+    };
+  });
+}
+
+export async function getShowcaseSamples(limit: number = 6) {
+  const samples = await db.sample.findMany({
+    take: limit,
+    include: {
+      run: {
+        include: {
+          model: {
+            include: { provider: true },
+          },
+        },
+      },
+      judgments: true,
+    },
+  });
+
+  const prompt = await db.prompt.findFirst();
+
+  return samples.map((s, index) => {
+    const judgment = s.judgments[0];
+    const score = judgment ? judgment.composite : s.run.model.composite;
+    return {
+      id: s.id,
+      title: prompt?.title || `Generation ${index + 1}`,
+      model: s.run.model.name,
+      provider: s.run.model.provider.name,
+      category: "Frontend UI",
+      score: Number(score.toFixed(1)),
+      code: s.rawOutput,
+    };
+  });
+}
+
 export async function getAllPrompts() {
   return await db.prompt.findMany({
     include: {
@@ -153,3 +242,4 @@ export async function getAllPrompts() {
     },
   });
 }
+

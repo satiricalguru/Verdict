@@ -129,12 +129,12 @@ export default function VerdictDial({
             <motion.path
               d={scoreArc}
               fill="none"
-              stroke="var(--gauge)"
+              stroke="var(--signal)"
               strokeWidth={strokeWidth + 1}
               strokeLinecap="round"
               initial={shouldReduceMotion ? false : { pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
+              transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
             />
           )}
 
@@ -156,7 +156,7 @@ export default function VerdictDial({
                       : { x2: center, y2: center }
                   }
                   animate={{ x2: needleEnd.x, y2: needleEnd.y }}
-                  transition={{ duration: 1, ease: "backOut" }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                 />
               )}
               {/* Pivot Hub */}

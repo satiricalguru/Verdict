@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { getRecentRuns } from "@/lib/models";
+
+export async function GET() {
+  try {
+    const runs = await getRecentRuns(10);
+    return NextResponse.json({ runs });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch runs";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -91,3 +102,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

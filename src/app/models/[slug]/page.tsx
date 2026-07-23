@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import VerdictDial from "@/components/ui/verdict-dial";
 import Scoreboard from "@/components/ui/scoreboard";
+import ProviderLogo from "@/components/ui/provider-logo";
 import { getModelBySlug } from "@/lib/models";
 import {
   ArrowLeft,
@@ -41,9 +42,7 @@ export default async function ModelDetailPage({
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         <div className="lg:col-span-8 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded bg-[var(--ink)] text-[var(--paper)] font-mono font-bold text-lg flex items-center justify-center">
-              {modelData.name[0]}
-            </div>
+            <ProviderLogo provider={modelData.provider} size="lg" />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">

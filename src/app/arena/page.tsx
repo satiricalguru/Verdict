@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Swords, ThumbsUp, RefreshCw, Sparkles, Code, Eye } from "lucide-react";
+import { Swords, ThumbsUp, RefreshCw, Code, Eye } from "lucide-react";
 
 export default function ArenaPage() {
   const [blindMode, setBlindMode] = useState(true);
@@ -66,16 +66,11 @@ export default function ArenaPage() {
     setSelectedWinner(winner);
     setVoted(true);
     setBlindMode(false);
-
     try {
       await fetch("/api/arena/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          modelAId: modelA.id,
-          modelBId: modelB.id,
-          winner,
-        }),
+        body: JSON.stringify({ modelAId: modelA.id, modelBId: modelB.id, winner }),
       });
     } catch (e) {
       console.error(e);
@@ -88,20 +83,8 @@ export default function ArenaPage() {
       const res = await fetch("/api/arena/match", { method: "POST" });
       const data = await res.json();
       if (data.modelA && data.modelB) {
-        setModelA((prev) => ({
-          ...prev,
-          id: data.modelA.id,
-          name: data.modelA.name,
-          score: data.modelA.score,
-          elo: data.modelA.elo,
-        }));
-        setModelB((prev) => ({
-          ...prev,
-          id: data.modelB.id,
-          name: data.modelB.name,
-          score: data.modelB.score,
-          elo: data.modelB.elo,
-        }));
+        setModelA((prev) => ({ ...prev, id: data.modelA.id, name: data.modelA.name, score: data.modelA.score, elo: data.modelA.elo }));
+        setModelB((prev) => ({ ...prev, id: data.modelB.id, name: data.modelB.name, score: data.modelB.score, elo: data.modelB.elo }));
         setVoted(false);
         setBlindMode(true);
         setSelectedWinner(null);
@@ -113,56 +96,54 @@ export default function ArenaPage() {
     }
   };
 
+  const tabClass = (active: boolean) =>
+    `px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--signal)] ${
+      active
+        ? "bg-[var(--paper)] text-[var(--ink)] border border-[var(--border)] shadow-xs"
+        : "text-[var(--mist)] hover:text-[var(--ink)] hover:bg-[var(--fog)]/60"
+    }`;
+
+  const voteButtonClass = (side: "A" | "B") => {
+    if (voted) {
+      return selectedWinner === side
+        ? "bg-[var(--pass)] text-white shadow-xs"
+        : "bg-[var(--fog)] text-[var(--mist)] border border-[var(--border)]";
+    }
+    return "bg-[var(--ink)] text-[var(--paper)] hover:opacity-90 active:scale-[0.98]";
+  };
+
   return (
     <div className="space-y-8">
       {/* Banner */}
-      <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-4">
+      <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-mono text-[var(--signal)]">
               <Swords className="w-4 h-4" />
               <span>Head-to-Head Arena</span>
             </div>
-            <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
+            {/* h1 — font-sans font-semibold */}
+            <h1 className="font-sans font-semibold text-2xl sm:text-3xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
               Blind Model Comparison
             </h1>
-            <p className="text-sm text-[var(--mist)] max-w-2xl">
-              Compare generated code outputs side-by-side without knowing model identities. Vote on quality to build crowd Elo ratings alongside AI judge scores.
+            {/* Collapsed dual-signal description — no redundant info cards */}
+            <p className="text-sm text-[var(--mist)] max-w-2xl leading-relaxed">
+              Compare AI output quality blind — then reveal model identities. Your votes build crowd Elo ratings (
+              <ThumbsUp className="w-3.5 h-3.5 inline -mt-0.5 text-[var(--gauge)]" />
+              ) alongside auditable multi-judge scores across Functionality, Craft, Design, and Fidelity.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={handleNewMatch}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--fog)] border border-[var(--border)] text-xs font-mono font-semibold text-[var(--ink)] hover:bg-[var(--paper)] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--fog)] border border-[var(--border)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--paper)] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--signal)]"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
               <span>{isRefreshing ? "Fetching..." : "Surprise Pairing"}</span>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Dual Signals Info Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-        <div className="p-4 rounded-lg bg-[var(--paper)] border border-[var(--border)] space-y-1">
-          <div className="font-bold text-[var(--signal)] flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4" />
-            <span>Signal 1: Auditable Multi-Judge Score</span>
-          </div>
-          <p className="text-[var(--mist)] font-sans">
-            Rigorous rubric grading across Functionality, Craft, Design, Creativity, & Fidelity.
-          </p>
-        </div>
-        <div className="p-4 rounded-lg bg-[var(--paper)] border border-[var(--border)] space-y-1">
-          <div className="font-bold text-[var(--gauge)] flex items-center gap-1.5">
-            <ThumbsUp className="w-4 h-4" />
-            <span>Signal 2: Blind Crowd Elo Rating</span>
-          </div>
-          <p className="text-[var(--mist)] font-sans">
-            Human preference signal gathered from blind head-to-head votes.
-          </p>
         </div>
       </div>
 
@@ -172,57 +153,51 @@ export default function ArenaPage() {
         <div
           className={`rounded-xl bg-[var(--paper)] border ${
             voted && selectedWinner === "A"
-              ? "border-[var(--pass)] shadow-md"
+              ? "border-[var(--pass)]"
               : "border-[var(--border)]"
-          } p-6 space-y-4`}
+          } p-6 space-y-4 transition-colors`}
         >
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 font-mono text-xs">
-            <span className="font-bold text-[var(--ink)] text-sm">
-              {blindMode ? "Model Alpha (Anonymous)" : modelA.name}
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <span className="font-sans font-semibold text-sm text-[var(--ink)]">
+              {blindMode ? "Model Alpha" : modelA.name}
             </span>
             {!blindMode && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 font-mono text-xs">
                 <span className="text-[var(--signal)] font-bold">Score: {modelA.score}</span>
                 <span className="text-[var(--gauge)] font-bold">Elo: {modelA.elo}</span>
               </div>
             )}
           </div>
 
-          {/* View Mode Toggle Tabs */}
-          <div className="flex items-center justify-between font-mono text-xs">
-            <div className="flex gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1.5">
               <button
                 onClick={() => setViewTabA("preview")}
-                className={`px-3 py-1 rounded-md flex items-center gap-1.5 transition-colors ${
-                  viewTabA === "preview"
-                    ? "bg-[var(--signal)] text-white font-bold"
-                    : "bg-[var(--fog)] text-[var(--mist)] hover:text-[var(--ink)]"
-                }`}
+                aria-pressed={viewTabA === "preview"}
+                className={tabClass(viewTabA === "preview")}
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Live Render</span>
               </button>
               <button
                 onClick={() => setViewTabA("code")}
-                className={`px-3 py-1 rounded-md flex items-center gap-1.5 transition-colors ${
-                  viewTabA === "code"
-                    ? "bg-[var(--signal)] text-white font-bold"
-                    : "bg-[var(--fog)] text-[var(--mist)] hover:text-[var(--ink)]"
-                }`}
+                aria-pressed={viewTabA === "code"}
+                className={tabClass(viewTabA === "code")}
               >
                 <Code className="w-3.5 h-3.5" />
                 <span>HTML Code</span>
               </button>
             </div>
-            <span className="text-[10px] text-[var(--pass)]">Sandbox CSP Isolated</span>
+            <span className="text-[10px] font-mono text-[var(--pass)]">Sandbox CSP</span>
           </div>
 
-          {/* Output Window */}
-          <div className="h-80 rounded-lg bg-[var(--fog)] border border-[var(--border)] overflow-hidden">
+          {/* Output Window — responsive height */}
+          <div className="h-64 sm:h-80 lg:h-72 xl:h-80 rounded-xl bg-[var(--fog)] border border-[var(--border)] overflow-hidden">
             {viewTabA === "preview" ? (
               <iframe
                 srcDoc={modelA.code}
-                title="Model Alpha Live Preview"
+                title={`${blindMode ? "Anonymous Model Alpha" : modelA.name} — AI generated UI preview`}
                 className="w-full h-full border-none"
                 sandbox="allow-scripts"
               />
@@ -237,19 +212,16 @@ export default function ArenaPage() {
           <button
             disabled={voted}
             onClick={() => handleVote("A")}
-            className={`w-full py-2.5 rounded-md font-semibold text-sm transition-all ${
-              voted
-                ? selectedWinner === "A"
-                  ? "bg-[var(--pass)] text-white shadow-md"
-                  : "bg-[var(--fog)] text-[var(--mist)]"
-                : "bg-[var(--signal)] text-white hover:bg-[var(--signal-hover)] active:scale-95"
-            }`}
+            aria-label="Vote: Model Alpha output is better"
+            aria-pressed={voted && selectedWinner === "A"}
+            aria-disabled={voted}
+            className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all focus-visible:ring-2 focus-visible:ring-[var(--signal)] focus-visible:ring-offset-2 ${voteButtonClass("A")}`}
           >
             {voted
               ? selectedWinner === "A"
-                ? "✓ Voted Model Alpha (Winner)"
+                ? "✓ Voted Model Alpha"
                 : "Model Alpha"
-              : "Vote Output Alpha is Better"}
+              : "Vote Alpha is Better"}
           </button>
         </div>
 
@@ -257,57 +229,51 @@ export default function ArenaPage() {
         <div
           className={`rounded-xl bg-[var(--paper)] border ${
             voted && selectedWinner === "B"
-              ? "border-[var(--pass)] shadow-md"
+              ? "border-[var(--pass)]"
               : "border-[var(--border)]"
-          } p-6 space-y-4`}
+          } p-6 space-y-4 transition-colors`}
         >
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 font-mono text-xs">
-            <span className="font-bold text-[var(--ink)] text-sm">
-              {blindMode ? "Model Beta (Anonymous)" : modelB.name}
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <span className="font-sans font-semibold text-sm text-[var(--ink)]">
+              {blindMode ? "Model Beta" : modelB.name}
             </span>
             {!blindMode && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 font-mono text-xs">
                 <span className="text-[var(--signal)] font-bold">Score: {modelB.score}</span>
                 <span className="text-[var(--gauge)] font-bold">Elo: {modelB.elo}</span>
               </div>
             )}
           </div>
 
-          {/* View Mode Toggle Tabs */}
-          <div className="flex items-center justify-between font-mono text-xs">
-            <div className="flex gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1.5">
               <button
                 onClick={() => setViewTabB("preview")}
-                className={`px-3 py-1 rounded-md flex items-center gap-1.5 transition-colors ${
-                  viewTabB === "preview"
-                    ? "bg-[var(--signal)] text-white font-bold"
-                    : "bg-[var(--fog)] text-[var(--mist)] hover:text-[var(--ink)]"
-                }`}
+                aria-pressed={viewTabB === "preview"}
+                className={tabClass(viewTabB === "preview")}
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Live Render</span>
               </button>
               <button
                 onClick={() => setViewTabB("code")}
-                className={`px-3 py-1 rounded-md flex items-center gap-1.5 transition-colors ${
-                  viewTabB === "code"
-                    ? "bg-[var(--signal)] text-white font-bold"
-                    : "bg-[var(--fog)] text-[var(--mist)] hover:text-[var(--ink)]"
-                }`}
+                aria-pressed={viewTabB === "code"}
+                className={tabClass(viewTabB === "code")}
               >
                 <Code className="w-3.5 h-3.5" />
                 <span>HTML Code</span>
               </button>
             </div>
-            <span className="text-[10px] text-[var(--pass)]">Sandbox CSP Isolated</span>
+            <span className="text-[10px] font-mono text-[var(--pass)]">Sandbox CSP</span>
           </div>
 
-          {/* Output Window */}
-          <div className="h-80 rounded-lg bg-[var(--fog)] border border-[var(--border)] overflow-hidden">
+          {/* Output Window — responsive height */}
+          <div className="h-64 sm:h-80 lg:h-72 xl:h-80 rounded-xl bg-[var(--fog)] border border-[var(--border)] overflow-hidden">
             {viewTabB === "preview" ? (
               <iframe
                 srcDoc={modelB.code}
-                title="Model Beta Live Preview"
+                title={`${blindMode ? "Anonymous Model Beta" : modelB.name} — AI generated UI preview`}
                 className="w-full h-full border-none"
                 sandbox="allow-scripts"
               />
@@ -322,19 +288,16 @@ export default function ArenaPage() {
           <button
             disabled={voted}
             onClick={() => handleVote("B")}
-            className={`w-full py-2.5 rounded-md font-semibold text-sm transition-all ${
-              voted
-                ? selectedWinner === "B"
-                  ? "bg-[var(--pass)] text-white shadow-md"
-                  : "bg-[var(--fog)] text-[var(--mist)]"
-                : "bg-[var(--signal)] text-white hover:bg-[var(--signal-hover)] active:scale-95"
-            }`}
+            aria-label="Vote: Model Beta output is better"
+            aria-pressed={voted && selectedWinner === "B"}
+            aria-disabled={voted}
+            className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all focus-visible:ring-2 focus-visible:ring-[var(--signal)] focus-visible:ring-offset-2 ${voteButtonClass("B")}`}
           >
             {voted
               ? selectedWinner === "B"
-                ? "✓ Voted Model Beta (Winner)"
+                ? "✓ Voted Model Beta"
                 : "Model Beta"
-              : "Vote Output Beta is Better"}
+              : "Vote Beta is Better"}
           </button>
         </div>
       </div>

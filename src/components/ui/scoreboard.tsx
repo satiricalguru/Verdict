@@ -83,7 +83,7 @@ export default function Scoreboard({
           {chars.map((char, index) => {
             if (char === ".") {
               return (
-                <span key={`dot-${index}`} className="text-[var(--gauge)] px-0.5 self-center">
+                <span key={`dot-${index}`} className="text-[var(--signal)] px-0.5 self-center">
                   .
                 </span>
               );
@@ -104,8 +104,8 @@ export default function Scoreboard({
                     initial={shouldReduceMotion ? false : { y: -12, opacity: 0, rotateX: 60 }}
                     animate={{ y: 0, opacity: 1, rotateX: 0 }}
                     exit={shouldReduceMotion ? undefined : { y: 12, opacity: 0, rotateX: -60 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="z-0 font-mono tracking-tight drop-shadow-sm"
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="z-0 font-mono tracking-tight drop-shadow-xs"
                   >
                     {char}
                   </motion.span>
@@ -116,7 +116,7 @@ export default function Scoreboard({
         </div>
 
         {suffix && (
-          <span className={`ml-2 font-mono font-bold text-[var(--gauge)] opacity-90 self-end ${suffixFontSize}`}>
+          <span className={`ml-2 font-mono font-bold text-[var(--signal)] opacity-90 self-end ${suffixFontSize}`}>
             {suffix}
           </span>
         )}
