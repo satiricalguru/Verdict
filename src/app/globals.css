@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --fog: #F3F4F7;
+  --paper: #FFFFFF;
+  --ink: #12141C;
+  --mist: #64748B;
+  --mist-border: #DCE0E8;
+  --signal: #3D2EFF;
+  --signal-hover: #2E1FE6;
+  --gauge: #F5A623;
+  --pass: #1FAA6E;
+  --fail: #E14F4F;
+
+  --background: var(--fog);
+  --card: var(--paper);
+  --foreground: var(--ink);
+  --border: var(--mist-border);
+}
+
+.dark {
+  --fog: #0E1016;
+  --paper: #161922;
+  --ink: #F8FAFC;
+  --mist: #94A3B8;
+  --mist-border: #242938;
+  --signal: #4F40FF;
+  --signal-hover: #3D2EFF;
+  --gauge: #F5A623;
+  --pass: #1FAA6E;
+  --fail: #E14F4F;
+
+  --background: var(--fog);
+  --card: var(--paper);
+  --foreground: var(--ink);
+  --border: var(--mist-border);
+}
+
+@theme inline {
+  --color-fog: var(--fog);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-mist: var(--mist);
+  --color-signal: var(--signal);
+  --color-gauge: var(--gauge);
+  --color-pass: var(--pass);
+  --color-fail: var(--fail);
+  
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-instrument), system-ui, sans-serif;
+  --font-mono: var(--font-fragment), monospace;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-instrument), system-ui, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom Scrollbar for Instrument Aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mist);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--signal);
+}

@@ -1,0 +1,12 @@
+# verdict.config.yaml — gate a deploy on model quality
+suite: production-gate
+fail_if:
+  composite: < 80.0
+  category.full_stack: < 70.0
+  p50_latency_seconds: > 3.0
+models:
+  - id: nova-1
+  - id: halcyon-2
+categories: [frontend-ui, full-stack, agentic-tasks]
+judge: verdict-panel-v1
+budget_usd: 25

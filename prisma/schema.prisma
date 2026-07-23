@@ -1,0 +1,112 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Provider {
+  id      String  @id @default(cuid())
+  name    String
+  logoUrl String?
+  models  Model[]
+}
+
+model Model {
+  id            String   @id @default(cuid())
+  providerId    String
+  provider      Provider @relation(fields: [providerId], references: [id])
+  name          String
+  slug          String   @unique
+  modelIdString String
+  releaseDate   DateTime?
+  priceInput    Float
+  priceOutput   Float
+  isOpenWeight  Boolean  @default(false)
+  capabilities  String   // JSON string
+  composite     Float    @default(0)
+  runs          Run[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  typeTag     String
+  description String
+  prompts     Prompt[]
+}
+
+model Prompt {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  title      String
+  body       String
+  difficulty String
+  isPublic   Boolean  @default(false)
+  heldOut    Boolean  @default(true)
+}
+
+model Run {
+  id            String   @id @default(cuid())
+  userId        String?
+  modelId       String
+  model         Model    @relation(fields: [modelId], references: [id])
+  status        String   // queued | running | complete | failed
+  costEstimate  Float
+  costActual    Float?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  samples       Sample[]
+}
+
+model Sample {
+  id           String     @id @default(cuid())
+  runId        String
+  run          Run        @relation(fields: [runId], references: [id])
+  promptId     String
+  rawOutput    String
+  previewUrl   String?
+  latencyMs    Int?
+  judgments    Judgment[]
+}
+
+model Judgment {
+  id            String  @id @default(cuid())
+  sampleId      String
+  sample        Sample  @relation(fields: [sampleId], references: [id])
+  judgeModelId  String
+  rubricVersion String
+  scores        String  // JSON string: { functionality, craft, design, creativity, fidelity }
+  reasoning     String
+  composite     Float
+}
+
+model ArenaMatch {
+  id       String  @id @default(cuid())
+  modelAId String
+  modelBId String
+  promptId String
+  blind    Boolean @default(true)
+  votesA   Int     @default(0)
+  votesB   Int     @default(0)
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  apiKeys   ApiKey[]
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  provider    String   // openai, anthropic, google, etc.
+  keyEncrypted String
+  createdAt   DateTime @default(now())
+}
