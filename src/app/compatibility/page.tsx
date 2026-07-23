@@ -59,8 +59,8 @@ export default function CompatibilityPage() {
           <Cpu className="w-4 h-4" />
           <span>Model Compatibility & Readiness Tool</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          &quot;Can I Run It&quot; Benchmark Checker
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Model Compatibility &amp; Cost Calculator
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-2xl">
           Check if a target frontier model supports vision, function calling, max context windows, and estimate API token budget required for a full benchmark execution.

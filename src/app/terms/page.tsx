@@ -4,7 +4,7 @@ export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 py-4">
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-8 space-y-4">
-        <h1 className="font-display font-black text-3xl text-[var(--ink)]">
+        <h1 className="font-sans font-semibold text-3xl text-[var(--ink)] -tracking-[0.02em]">
           Terms of Service
         </h1>
         <p className="text-xs font-mono text-[var(--mist)]">
@@ -15,13 +15,13 @@ export default function TermsPage() {
           <p>
             Verdict is an open-source, free AI coding benchmark platform. All canonical leaderboard scores and evaluation data published on the site are provided for informational purposes.
           </p>
-          <h2 className="font-display font-bold text-sm text-[var(--ink)] pt-2">
+          <h2 className="font-sans font-semibold text-sm text-[var(--ink)] pt-2">
             1. Open Source License
           </h2>
           <p>
             Verdict software is released under the MIT License. Anyone may freely inspect, modify, fork, and self-host the software.
           </p>
-          <h2 className="font-display font-bold text-sm text-[var(--ink)] pt-2">
+          <h2 className="font-sans font-semibold text-sm text-[var(--ink)] pt-2">
             2. BYOK API Key Usage
           </h2>
           <p>

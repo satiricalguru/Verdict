@@ -45,7 +45,7 @@ export default function RunLogPage({
       <div>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1 text-xs font-mono text-[var(--mist)] hover:text-[var(--signal)] transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-mono text-[var(--mist)] hover:text-[var(--signal)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--signal)] rounded"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Dashboard</span>
@@ -54,14 +54,14 @@ export default function RunLogPage({
 
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl text-[var(--ink)]">
+          <h1 className="font-sans font-semibold text-2xl text-[var(--ink)] -tracking-[0.02em]">
             Execution Log: {id}
           </h1>
           <p className="text-xs font-mono text-[var(--mist)] mt-1">
             Target Model: Nova-1 • Status: {isComplete ? "Completed" : "Streaming..."} • Total Cost: $0.42
           </p>
         </div>
-        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded font-mono text-xs font-bold border ${
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-mono text-xs font-bold border ${
           isComplete
             ? "bg-[var(--pass)]/10 text-[var(--pass)] border-[var(--pass)]/20"
             : "bg-[var(--signal)]/10 text-[var(--signal)] border-[var(--signal)]/20"
@@ -71,21 +71,20 @@ export default function RunLogPage({
         </div>
       </div>
 
-      {/* Terminal Live Stream Panel */}
-      <div className="rounded-xl bg-[#0B0D13] border border-[#242938] p-5 font-mono text-xs text-slate-300 space-y-2 shadow-2xl overflow-hidden min-h-[340px]">
-        <div className="flex items-center justify-between border-b border-[#242938] pb-3 text-slate-500 text-[11px]">
+      {/* Terminal Live Stream Panel — uses design tokens */}
+      <div className="rounded-xl bg-[var(--fog)] border border-[var(--border)] p-5 font-mono text-xs text-[var(--ink)] space-y-2 shadow-xs overflow-hidden min-h-[340px]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 text-[var(--mist)] text-[11px]">
           <div className="flex items-center gap-2">
             <Terminal className="w-4 h-4 text-[var(--signal)]" />
-            <span className="text-slate-300 font-bold">engine.verdict.stdout</span>
+            <span className="text-[var(--ink)] font-semibold font-sans">engine.verdict.stdout</span>
           </div>
-          <span>EventSource Stream: Active</span>
+          <span className="font-mono text-[11px]">EventSource Stream: Active</span>
         </div>
 
         <div className="space-y-1.5 pt-2 text-[11px] leading-relaxed">
           {logs.map((line, index) => {
             const isSuccess = line.includes("SUCCESS") || line.includes("COMPLETE");
             const isInfo = line.includes("INFO");
-            const isDebug = line.includes("DEBUG");
 
             return (
               <div
@@ -94,10 +93,8 @@ export default function RunLogPage({
                   isSuccess
                     ? "text-[var(--pass)] font-bold"
                     : isInfo
-                    ? "text-slate-300"
-                    : isDebug
-                    ? "text-slate-500"
-                    : "text-slate-400"
+                    ? "text-[var(--ink)]"
+                    : "text-[var(--mist)]"
                 }
               >
                 {line}
@@ -106,7 +103,7 @@ export default function RunLogPage({
           })}
 
           {!isComplete && (
-            <div className="text-[var(--signal)] animate-pulse pt-2">
+            <div className="text-[var(--signal)] font-semibold pt-2">
               &gt; Streaming logs from evaluation engine...
             </div>
           )}

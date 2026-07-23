@@ -67,8 +67,8 @@ export default function SettingsPage() {
           <KeyRound className="w-4 h-4 text-[var(--gauge)]" />
           <span>BYOK Key Management</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Bring Your Own Key (BYOK) Manager
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          BYOK API Key Management
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           Verdict is 100% free and open-source. API keys supplied here are stored encrypted at rest using application envelope encryption, isolated to your workspace, and never shared or logged.
@@ -77,7 +77,7 @@ export default function SettingsPage() {
 
       {/* Add New Key Form */}
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 space-y-4">
-        <h2 className="font-display font-bold text-xl text-[var(--ink)]">
+        <h2 className="font-sans font-semibold text-xl text-[var(--ink)]">
           Add Provider API Key
         </h2>
 

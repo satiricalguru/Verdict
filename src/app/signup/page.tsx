@@ -10,7 +10,7 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-1">
-          <h1 className="font-display font-black text-2xl text-[var(--ink)]">
+          <h1 className="font-sans font-semibold text-2xl text-[var(--ink)] -tracking-[0.02em]">
             Create Verdict Account
           </h1>
           <p className="text-xs text-[var(--mist)]">

@@ -29,6 +29,17 @@ export default function RunLauncher({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingModels, setLoadingModels] = useState(true);
 
+  // Close on Escape key press
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && onClose) {
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   useEffect(() => {
     let isMounted = true;
     fetch("/api/models")
@@ -77,13 +88,22 @@ export default function RunLauncher({
   const estimatedCost = (selectedCategories.length * 0.25).toFixed(2);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-xl bg-[var(--paper)] border border-[var(--border)] ring-1 ring-white/5 p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-150 text-[var(--ink)] font-sans">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="launcher-dialog-title"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg rounded-xl bg-[var(--paper)] border border-[var(--border)] ring-1 ring-white/5 p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-150 text-[var(--ink)] font-sans"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
           <div className="flex items-center gap-2">
             <Play className="w-4 h-4 text-[var(--signal)]" />
-            <h2 className="font-sans font-semibold text-base text-[var(--ink)]">
+            <h2 id="launcher-dialog-title" className="font-sans font-semibold text-base text-[var(--ink)]">
               Launch Benchmark Evaluation
             </h2>
           </div>
@@ -98,7 +118,7 @@ export default function RunLauncher({
           )}
         </div>
 
-        {/* Model Selection — custom styled select with appearance-none + chevron */}
+        {/* Model Selection */}
         <div className="space-y-1.5">
           <label htmlFor="model-select" className="block text-xs font-semibold tracking-tight text-[var(--ink)]">
             1. Target AI Model{" "}

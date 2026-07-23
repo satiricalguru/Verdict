@@ -19,8 +19,8 @@ export default async function CategoriesPage() {
   return (
     <div className="space-y-8">
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-3">
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Benchmark Categories
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Benchmark Scope &amp; Categories
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           Verdict evaluates frontier models across 10 benchmark categories spanning interactive web apps, 2D game loops, vector artwork, and multi-step autonomous planning.
@@ -43,7 +43,7 @@ export default async function CategoriesPage() {
                   <IconComp className="w-5 h-5 text-[var(--signal)]" />
                 </div>
 
-                <h2 className="font-display font-bold text-2xl text-[var(--ink)]">
+                <h2 className="font-sans font-semibold text-2xl text-[var(--ink)]">
                   {cat.name}
                 </h2>
 

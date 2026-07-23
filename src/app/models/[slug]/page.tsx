@@ -45,7 +45,7 @@ export default async function ModelDetailPage({
             <ProviderLogo provider={modelData.provider} size="lg" />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
+                <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
                   {modelData.name}
                 </h1>
                 {modelData.isOpenWeight && (
@@ -91,7 +91,7 @@ export default async function ModelDetailPage({
 
       {/* Category Breakdown Grid */}
       <section className="space-y-4">
-        <h2 className="font-display font-bold text-2xl text-[var(--ink)]">
+        <h2 className="font-sans font-semibold text-2xl text-[var(--ink)]">
           Category Score Breakdown
         </h2>
 
@@ -102,7 +102,7 @@ export default async function ModelDetailPage({
               className="rounded-lg bg-[var(--paper)] border border-[var(--border)] p-5 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="font-display font-bold text-base text-[var(--ink)]">
+                <span className="font-sans font-semibold text-base text-[var(--ink)]">
                   {cat.name}
                 </span>
                 <span className="font-mono font-bold text-lg text-[var(--gauge)]">
@@ -125,7 +125,7 @@ export default async function ModelDetailPage({
       <section className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-6">
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
           <div>
-            <h2 className="font-display font-bold text-xl text-[var(--ink)]">
+            <h2 className="font-sans font-semibold text-xl text-[var(--ink)]">
               Auditable Multi-Judge Dimension Scoring
             </h2>
             <p className="text-xs text-[var(--mist)] mt-1">

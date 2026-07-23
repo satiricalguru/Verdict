@@ -9,8 +9,8 @@ export default function DocsPage() {
           <BookOpen className="w-4 h-4" />
           <span>Documentation & Methodology</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Verdict Benchmark Methodology
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Scoring Methodology &amp; Auditing Framework
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           Comprehensive documentation explaining how AI judge panels grade frontier models, how held-out prompt sets are protected, and how composite scores are calculated.
@@ -19,7 +19,7 @@ export default function DocsPage() {
 
       <div className="space-y-6">
         <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 space-y-4">
-          <h2 className="font-display font-bold text-xl text-[var(--ink)] flex items-center gap-2">
+          <h2 className="font-sans font-semibold text-xl text-[var(--ink)] flex items-center gap-2">
             <Scale className="w-5 h-5 text-[var(--signal)]" />
             <span>1. Multi-Judge Panel Architecture</span>
           </h2>
@@ -36,7 +36,7 @@ export default function DocsPage() {
         </div>
 
         <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 space-y-4">
-          <h2 className="font-display font-bold text-xl text-[var(--ink)] flex items-center gap-2">
+          <h2 className="font-sans font-semibold text-xl text-[var(--ink)] flex items-center gap-2">
             <Lock className="w-5 h-5 text-[var(--gauge)]" />
             <span>2. Held-Out Prompt Set Protection</span>
           </h2>

@@ -36,8 +36,8 @@ export default async function CategoryDetailPage({
           <Sparkles className="w-4 h-4" />
           <span>Category Suite: {categoryData.typeTag}</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          {categoryData.name}
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          {categoryData.name} Evaluation Benchmark
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl leading-relaxed">
           {categoryData.description}
@@ -46,7 +46,7 @@ export default async function CategoryDetailPage({
 
       {/* Top Models in Category */}
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 space-y-4">
-        <h2 className="font-display font-bold text-xl text-[var(--ink)] flex items-center gap-2">
+        <h2 className="font-sans font-semibold text-xl text-[var(--ink)] flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[var(--gauge)]" />
           <span>Top Model Leaders in {categoryData.name}</span>
         </h2>

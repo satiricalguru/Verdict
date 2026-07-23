@@ -18,8 +18,8 @@ export default function ContactPage() {
           <Mail className="w-4 h-4" />
           <span>Maintainer Contact</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Get in Touch
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Contact Maintainers &amp; Team
         </h1>
         <p className="text-sm text-[var(--mist)]">
           Have feedback on scoring rubrics, benchmark prompts, or self-hosting? Send us a message.
@@ -30,7 +30,7 @@ export default function ContactPage() {
         {submitted ? (
           <div className="text-center py-8 space-y-3">
             <CheckCircle2 className="w-12 h-12 text-[var(--pass)] mx-auto" />
-            <h2 className="font-display font-bold text-2xl text-[var(--ink)]">
+            <h2 className="font-sans font-semibold text-2xl text-[var(--ink)]">
               Message Received
             </h2>
             <p className="text-xs text-[var(--mist)] font-mono">

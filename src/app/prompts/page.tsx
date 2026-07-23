@@ -15,8 +15,8 @@ export default async function PromptsPage() {
           <Terminal className="w-4 h-4" />
           <span>Prompt Library & Evaluation Tasks</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Published Test Set & Held-Out Rubrics
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Benchmark Prompt Suite &amp; Rubrics
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           Browse the task specifications used in Verdict benchmark runs. A portion of the prompt set is held private to prevent model providers from overfitting to the benchmark.
@@ -63,7 +63,7 @@ export default async function PromptsPage() {
                 </div>
               </div>
 
-              <h2 className="font-display font-bold text-xl text-[var(--ink)]">
+              <h2 className="font-sans font-semibold text-xl text-[var(--ink)]">
                 {p.title}
               </h2>
 

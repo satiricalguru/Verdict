@@ -20,7 +20,7 @@ export default function Footer() {
               The scoreboard vendors don&apos;t get to grade. An independent, free, and self-hostable AI coding benchmark platform.
             </p>
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[var(--fog)] border border-[var(--border)] text-[11px] font-mono text-[var(--pass)]">
-              <span className="w-2 h-2 rounded-full bg-[var(--pass)] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[var(--pass)]" />
               <span>All Systems Operational</span>
             </div>
           </div>

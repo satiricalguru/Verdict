@@ -14,9 +14,17 @@ export default function Navbar() {
   const exploreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    const timer = setTimeout(() => setIsDark(isDarkMode), 0);
-    return () => clearTimeout(timer);
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const shouldBeDark = savedTheme ? savedTheme === "dark" : prefersDark;
+
+    if (shouldBeDark) {
+      document.documentElement.classList.add("dark");
+      setIsDark(true);
+    } else {
+      document.documentElement.classList.remove("dark");
+      setIsDark(false);
+    }
   }, []);
 
   // Close explore dropdown when clicking outside
@@ -33,9 +41,11 @@ export default function Navbar() {
   const toggleTheme = () => {
     if (isDark) {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
       setIsDark(false);
     } else {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
       setIsDark(true);
     }
   };
@@ -65,7 +75,7 @@ export default function Navbar() {
               <span className="font-sans font-semibold text-base tracking-tight text-[var(--ink)] group-hover:text-[var(--signal)] transition-colors">
                 Verdict
               </span>
-              <span className="text-[9px] font-mono tracking-widest text-[var(--mist)] uppercase -mt-0.5 font-medium">
+              <span className="text-[10px] font-sans font-medium tracking-wider text-[var(--mist)] uppercase -mt-0.5">
                 AI Benchmark
               </span>
             </div>
@@ -141,7 +151,7 @@ export default function Navbar() {
               aria-label="Toggle dark mode"
               title="Toggle dark mode"
             >
-              {isDark ? <Sun className="w-4 h-4 text-[var(--gauge)]" /> : <Moon className="w-4 h-4 text-[var(--ink)]" />}
+              {isDark ? <Sun className="w-4 h-4 text-[var(--ink)]" /> : <Moon className="w-4 h-4 text-[var(--ink)]" />}
             </button>
 
             <Link
@@ -160,7 +170,7 @@ export default function Navbar() {
               className="p-2 rounded-lg border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--fog)] transition-colors"
               aria-label="Toggle dark mode"
             >
-              {isDark ? <Sun className="w-4 h-4 text-[var(--gauge)]" /> : <Moon className="w-4 h-4 text-[var(--ink)]" />}
+              {isDark ? <Sun className="w-4 h-4 text-[var(--ink)]" /> : <Moon className="w-4 h-4 text-[var(--ink)]" />}
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

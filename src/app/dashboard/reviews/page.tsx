@@ -35,8 +35,8 @@ export default function HumanReviewQueuePage() {
           <ShieldAlert className="w-4 h-4" />
           <span>Auditable Quality Control</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Human Review Disagreement Queue
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Human Review &amp; Disagreements
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           When judge model scores disagree beyond a set delta threshold (&gt;15 points), samples are flagged here for human audit instead of silently averaging out disagreements.

@@ -26,7 +26,7 @@ export default function HomePage() {
           {/* Left Column: Title, Copy & Actions */}
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--fog)] border border-[var(--border)] text-xs font-mono text-[var(--mist)]">
-              <span className="w-2 h-2 rounded-full bg-[var(--pass)] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[var(--pass)]" />
               <span className="font-semibold text-[var(--ink)]">v2026.07</span>
               <span>· Live Render &amp; Multi-Judge Evals Active</span>
             </div>

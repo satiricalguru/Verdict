@@ -15,8 +15,8 @@ export default async function ShowcasePage() {
           <Sparkles className="w-4 h-4" />
           <span>Community Generation Gallery</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Top-Scoring Artifact Showcase
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Community Output Showcase
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           Opt-in showcase of top-rated model generations evaluated by the Verdict judge panel. Each card renders in a sandboxed isolated runtime.
@@ -41,7 +41,7 @@ export default async function ShowcasePage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-display font-bold text-base text-[var(--ink)]">
+                  <h3 className="font-sans font-semibold text-base text-[var(--ink)]">
                     {item.title}
                   </h3>
                   <div className="text-xs font-mono text-[var(--mist)]">

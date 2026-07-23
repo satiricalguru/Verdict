@@ -22,8 +22,8 @@ export default function StatusPage() {
           </span>
         </div>
 
-        <h1 className="font-display font-black text-3xl text-[var(--ink)]">
-          All Verdict Services Operational
+        <h1 className="font-sans font-semibold text-3xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          System Status &amp; Performance
         </h1>
 
         <div className="divide-y divide-[var(--border)] font-mono text-xs pt-4 border-t border-[var(--border)]">

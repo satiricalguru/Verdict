@@ -252,7 +252,7 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] overflow-hidden shadow-xs">
         <div className="p-4 border-b border-[var(--border)] bg-[var(--fog)] flex items-center justify-between font-mono text-xs text-[var(--mist)]">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--pass)] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[var(--pass)]" />
             <span className="font-semibold text-[var(--ink)] tracking-tight font-sans">
               Canonical AI Coding Model Rankings ({filteredModels.length} Models)
             </span>
@@ -260,7 +260,54 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
           <span className="text-[11px] text-[var(--mist)] font-sans">Auto-Sync Active</span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Card List View (<768px) */}
+        <div className="block md:hidden divide-y divide-[var(--border)]">
+          {models.length === 0 ? (
+            <div className="p-8 text-center text-sm font-sans text-[var(--mist)]">Loading models...</div>
+          ) : filteredModels.length === 0 ? (
+            <div className="p-8 text-center text-sm font-sans text-[var(--mist)]">No models match your current filter.</div>
+          ) : (
+            filteredModels.map((model, idx) => (
+              <div key={model.id} className="p-4 space-y-3 bg-[var(--paper)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-mono text-xs font-semibold text-[var(--mist)]">#{idx + 1}</span>
+                    <ProviderLogo provider={model.provider} size="sm" />
+                    <div>
+                      <Link href={`/models/${model.slug}`} className="font-semibold text-sm text-[var(--ink)] hover:text-[var(--signal)] transition-colors flex items-center gap-1.5">
+                        <span>{model.name}</span>
+                        {model.isOpenWeight && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[var(--pass)]/10 text-[var(--pass)] font-semibold border border-[var(--pass)]/20">
+                            Open
+                          </span>
+                        )}
+                      </Link>
+                      <div className="text-[11px] text-[var(--mist)]">{model.provider}</div>
+                    </div>
+                  </div>
+                  <VerdictDial score={model.composite} size="sm" showNeedle={false} showValue={true} />
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-mono text-[var(--mist)] pt-1 border-t border-[var(--border)]/60">
+                  <div className="flex items-center gap-3">
+                    <span>Speed: <strong className="text-[var(--ink)] font-semibold">{model.tokensPerSec || "120 t/s"}</strong></span>
+                    <span>Context: <strong className="text-[var(--ink)] font-semibold">{model.contextWindow || "1M"}</strong></span>
+                  </div>
+                  <Link
+                    href={`/models/${model.slug}`}
+                    className="inline-flex items-center gap-1 text-xs font-sans font-semibold text-[var(--signal)] hover:underline"
+                  >
+                    <span>Details</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Data Table (>=768px) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse" aria-label="AI model leaderboard">
             <thead>
               <tr className="bg-[var(--fog)]/40 border-b border-[var(--border)] text-[11px] font-sans font-semibold text-[var(--mist)]">

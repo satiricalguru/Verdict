@@ -92,10 +92,9 @@ export default function Scoreboard({
             return (
               <div
                 key={`digit-${index}-${char}`}
-                className={`relative flex items-center justify-center rounded bg-[var(--paper)] border border-[var(--border)] shadow-sm text-[var(--ink)] ${charBoxSize} overflow-hidden`}
+                className={`relative flex items-center justify-center rounded-lg bg-[var(--paper)] border border-[var(--border)] shadow-xs text-[var(--ink)] ${charBoxSize} overflow-hidden`}
               >
-                {/* Flip flap divider line */}
-                <div className="absolute inset-x-0 top-1/2 h-[1px] bg-[var(--border)] z-10 opacity-70" />
+                {/* Animated Flip Character */}
                 
                 {/* Animated Flip Character */}
                 <AnimatePresence mode="popLayout">

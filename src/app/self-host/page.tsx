@@ -9,8 +9,8 @@ export default function SelfHostPage() {
           <Terminal className="w-4 h-4" />
           <span>Self-Hosting Architecture</span>
         </div>
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[var(--ink)]">
-          Run Verdict On Your Own Server
+        <h1 className="font-sans font-semibold text-3xl sm:text-4xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
+          Self-Host Verdict via Docker Compose
         </h1>
         <p className="text-sm text-[var(--mist)] max-w-3xl">
           Deploy a 100% private, self-contained Verdict benchmark stack using Docker Compose. Your model evaluations, custom test suites, and BYOK API keys remain entirely under your control.
@@ -51,7 +51,7 @@ export default function SelfHostPage() {
 
       <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-4">
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-          <h2 className="font-display font-bold text-xl text-[var(--ink)]">
+          <h2 className="font-sans font-semibold text-xl text-[var(--ink)]">
             Docker Compose Quickstart
           </h2>
           <span className="text-xs font-mono text-[var(--mist)]">
