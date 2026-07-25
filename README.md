@@ -6,7 +6,7 @@
     <img src="./public/icon.svg" width="96" height="96" alt="Verdict App Icon" />
   </a>
 
-  <h1 align="center">⚡ VERDICT</h1>
+  <h1 align="center">  VERDICT</h1>
 
   <p align="center">
     <b>The World's #1 Vibe Coding &amp; Frontier AI Model Evaluation Benchmark</b>
