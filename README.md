@@ -2,6 +2,10 @@
 
   <br />
 
+  <a href="https://github.com/satiricalguru/Verdict">
+    <img src="./public/icon.svg" width="96" height="96" alt="Verdict App Icon" />
+  </a>
+
   <h1 align="center">⚡ VERDICT</h1>
 
   <p align="center">
@@ -169,7 +173,13 @@ Every generated output is evaluated by 3 independent judge models across 5 weigh
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
+<br />
+
 <div align="center">
-  <br />
   <p>Built with ⚡ for the global AI developer community.</p>
+  <p align="center">
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Made%20with-Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Made with Python" /></a>
+    &nbsp;&nbsp;
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/Made%20with-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="Made with TypeScript" /></a>
+  </p>
 </div>
