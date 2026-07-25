@@ -3,29 +3,47 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Moon, Sun, Menu, X, Cpu, ChevronDown } from "lucide-react";
+import { Moon, Sun, Menu, X, ChevronDown } from "lucide-react";
 import VerdictLogo from "@/components/ui/verdict-logo";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return savedTheme ? savedTheme === "dark" : prefersDark;
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
+  const [user, setUser] = useState<{ id: string; name?: string; email?: string } | null>(null);
   const exploreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldBeDark = savedTheme ? savedTheme === "dark" : prefersDark;
-
-    if (shouldBeDark) {
+    if (isDark) {
       document.documentElement.classList.add("dark");
-      setIsDark(true);
     } else {
       document.documentElement.classList.remove("dark");
-      setIsDark(false);
     }
-  }, []);
+  }, [isDark]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.user) {
+          setUser(data.user);
+        } else if (active) {
+          setUser(null);
+        }
+      })
+      .catch((err) => console.warn(err));
+
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   // Close explore dropdown when clicking outside
   useEffect(() => {
@@ -50,17 +68,30 @@ export default function Navbar() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.warn("Logout error:", e);
+    }
+    setUser(null);
+    window.location.href = "/";
+  };
+
   const primaryNav = [
     { href: "/leaderboard", label: "Leaderboard" },
+    { href: "/playground", label: "Playground" },
+    { href: "/model-advisor", label: "Model Advisor" },
     { href: "/arena", label: "Arena" },
     { href: "/categories", label: "Categories" },
-    { href: "/docs", label: "Docs" },
   ];
 
   const secondaryNav = [
-    { href: "/compatibility", label: "Compatibility" },
+    { href: "/compatibility", label: "Can I Run It?" },
+    { href: "/pricing", label: "Pricing (Free PRO)" },
     { href: "/prompts", label: "Prompts" },
     { href: "/showcase", label: "Showcase" },
+    { href: "/docs", label: "Docs" },
     { href: "/self-host", label: "Self-Host" },
   ];
 
@@ -143,8 +174,8 @@ export default function Navbar() {
             </div>
           </nav>
 
-          {/* Actions: Theme Toggle & Dashboard CTA */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Actions: Theme Toggle, Dashboard & Dynamic Auth Button */}
+          <div className="hidden sm:flex items-center gap-2">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--fog)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--signal)]"
@@ -156,11 +187,26 @@ export default function Navbar() {
 
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--ink)] text-[var(--paper)] hover:opacity-90 transition-all shadow-xs active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[var(--signal)] focus-visible:ring-offset-2"
+              className="px-4 py-2 text-xs font-mono font-semibold rounded-lg border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--fog)] transition-colors"
             >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>Dashboard</span>
+              Dashboard
             </Link>
+
+            {user ? (
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 text-xs font-mono font-semibold rounded-lg border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--fog)] transition-colors cursor-pointer"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="px-4 py-2 text-xs font-mono font-semibold rounded-lg border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--fog)] transition-colors"
+              >
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -184,7 +230,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer — animated with max-h transition */}
+      {/* Mobile Navigation Drawer */}
       <div
         className={`sm:hidden overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
@@ -207,15 +253,33 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <div className="pt-2">
+          <div className="pt-2 flex items-center gap-2">
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ink)] text-[var(--paper)] font-semibold text-sm hover:opacity-90 transition-all active:scale-[0.98]"
+              className="flex-1 text-center py-2.5 rounded-lg border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] font-mono text-xs font-semibold"
             >
-              <Cpu className="w-4 h-4" />
-              <span>Dashboard</span>
+              Dashboard
             </Link>
+            {user ? (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleSignOut();
+                }}
+                className="flex-1 text-center py-2.5 rounded-lg border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] font-mono text-xs font-semibold"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 text-center py-2.5 rounded-lg border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] font-mono text-xs font-semibold"
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>

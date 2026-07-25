@@ -197,30 +197,36 @@ async function main() {
     createdCategories[cat.slug] = createdCat;
   }
 
-  // Seed Initial Real Prompts
-  await prisma.prompt.create({
-    data: {
-      categoryId: createdCategories["frontend-ui"].id,
-      title: "Realtime Financial Analytics Dashboard",
-      body: "Create a modern dark-mode stock portfolio analytics dashboard with dynamic SVG charts, tabular data, search filter pills, and accessible theme controls.",
-      difficulty: "Hard",
-      isPublic: true,
-      heldOut: false,
-    },
-  });
+  // Seed Prompts for ALL 10 Categories
+  const promptDefs = [
+    { cat: "frontend-ui", title: "Realtime Financial Analytics Dashboard", body: "Create a modern dark-mode stock portfolio analytics dashboard with dynamic SVG charts, tabular data, search filter pills, and accessible theme controls.", diff: "Hard" },
+    { cat: "game-dev", title: "Retro Arcade Space Shooter", body: "Build a single-file HTML5 canvas space shooter game with player movement, particle explosion effects, score keeping, and collision detection.", diff: "Medium" },
+    { cat: "svg-art", title: "Generative Cyberpunk Skyline", body: "Generate an inline SVG illustration of a futuristic cyberpunk skyline with glowing neon gradients, parallax buildings, and vector graphics.", diff: "Medium" },
+    { cat: "agentic-tasks", title: "Repository Schema Migration Script", body: "Write a multi-step execution plan and TypeScript migration script to split monolithic user tables into tenant-scoped normalized models.", diff: "Hard" },
+    { cat: "creative-writing", title: "System Architecture Specification", body: "Draft a comprehensive technical architecture overview and API spec for a distributed real-time AI evaluation engine.", diff: "Easy" },
+    { cat: "3d-graphics", title: "Interactive WebGL Particle System", body: "Create a 3D HTML5 Three.js scene featuring an interactive particle globe that responds to mouse hover and scroll events.", diff: "Hard" },
+    { cat: "data-viz", title: "Interactive Model Latency Heatmap", body: "Build a responsive D3 SVG heatmap grid visualizing global model latency across regional data centers with tooltips.", diff: "Medium" },
+    { cat: "animation", title: "Framer Motion Spring UI Timeline", body: "Implement an animated timeline component featuring staggered entry spring transitions, interactive pill filters, and dynamic layout morphing.", diff: "Medium" },
+    { cat: "full-stack", title: "Next.js 16 API Route & Prisma ORM Handler", body: "Write a type-safe Next.js API route handler with Prisma transactions, error handling, and rate limiting headers.", diff: "Hard" },
+    { cat: "code-golf", title: "Minified Matrix Inversion Solver", body: "Provide a byte-optimized JavaScript function that computes the determinant and inverse of an n x n matrix without external libraries.", diff: "Hard" },
+  ];
 
-  await prisma.prompt.create({
-    data: {
-      categoryId: createdCategories["game-dev"].id,
-      title: "Retro Arcade Space Shooter",
-      body: "Build a single-file HTML5 canvas space shooter game with player movement, particle explosion effects, score keeping, and collision detection.",
-      difficulty: "Medium",
-      isPublic: true,
-      heldOut: false,
-    },
-  });
+  for (const p of promptDefs) {
+    if (createdCategories[p.cat]) {
+      await prisma.prompt.create({
+        data: {
+          categoryId: createdCategories[p.cat].id,
+          title: p.title,
+          body: p.body,
+          difficulty: p.diff,
+          isPublic: true,
+          heldOut: false,
+        },
+      });
+    }
+  }
 
-  console.log("Successfully seeded ALL 100 mid-2026 Master AI Models with authentic Artificial Analysis & Arena rankings!");
+  console.log("Successfully seeded ALL 100 mid-2026 Master AI Models and 10 category prompt sets!");
 }
 
 main()

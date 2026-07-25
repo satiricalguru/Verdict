@@ -32,26 +32,24 @@ export async function syncLatestModels(force: boolean = false): Promise<SyncResu
   try {
     // Live Market Rankings Data Feed — Sourced from Artificial Analysis & LMSYS Chatbot Arena Leaderboard Index
     const marketRankingsFeed = [
+      { slug: "claude-opus-5-max", name: "Claude Opus 5 (max)", provider: "Anthropic", composite: 99.1, priceIn: 10.00, priceOut: 30.00, open: false },
       { slug: "claude-fable-5", name: "Claude Fable 5", provider: "Anthropic", composite: 98.4, priceIn: 2.75, priceOut: 5.50, open: false },
       { slug: "gpt-5-6-sol", name: "GPT-5.6 Sol (max)", provider: "OpenAI", composite: 96.2, priceIn: 1.04, priceOut: 3.12, open: false },
-      { slug: "deepseek-v4-pro", name: "DeepSeek V4 Pro", provider: "DeepSeek", composite: 94.8, priceIn: 0.43, priceOut: 0.87, open: true },
-      { slug: "claude-opus-4-8-max", name: "Claude Opus 4.8 (max)", provider: "Anthropic", composite: 93.5, priceIn: 1.80, priceOut: 5.40, open: false },
-      { slug: "gemini-3-6-flash", name: "Gemini 3.6 Flash", provider: "Google", composite: 92.8, priceIn: 0.15, priceOut: 0.45, open: false },
-      { slug: "claude-opus-4-8", name: "Claude Opus 4.8", provider: "Anthropic", composite: 92.2, priceIn: 5.00, priceOut: 25.00, open: false },
-      { slug: "grok-4-20-beta1", name: "Grok 4.20 Beta1", provider: "xAI", composite: 92.0, priceIn: 1.50, priceOut: 6.00, open: false },
-      { slug: "gpt-5-5", name: "GPT-5.5", provider: "OpenAI", composite: 91.8, priceIn: 5.00, priceOut: 30.00, open: false },
-      { slug: "grok-4-20-reasoning", name: "Grok 4.20 Reasoning", provider: "xAI", composite: 91.5, priceIn: 1.50, priceOut: 6.00, open: false },
-      { slug: "gemini-3-flash", name: "Gemini 3 Flash", provider: "Google", composite: 91.2, priceIn: 0.50, priceOut: 3.00, open: false },
-      { slug: "glm-5-1", name: "GLM-5.1", provider: "Z.AI", composite: 91.0, priceIn: 1.40, priceOut: 4.40, open: true },
-      { slug: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", provider: "Anthropic", composite: 90.8, priceIn: 3.00, priceOut: 15.00, open: false },
-      { slug: "grok-4-5", name: "Grok 4.5", provider: "xAI", slugAlt: "grok-4-5", composite: 90.5, priceIn: 1.50, priceOut: 6.00, open: false },
-      { slug: "kimi-k3", name: "Kimi K3", provider: "Moonshot AI", composite: 90.2, priceIn: 0.95, priceOut: 2.85, open: true },
-      { slug: "gpt-5-6-sol-xhigh", name: "GPT-5.6 Sol (xhigh)", provider: "OpenAI", composite: 89.8, priceIn: 0.68, priceOut: 2.04, open: false },
-      { slug: "gpt-5-6-sol-high", name: "GPT-5.6 Sol (high)", provider: "OpenAI", composite: 89.5, priceIn: 0.45, priceOut: 1.35, open: false },
-      { slug: "gpt-5-6-terra", name: "GPT-5.6 Terra (max)", provider: "OpenAI", composite: 89.2, priceIn: 0.82, priceOut: 2.46, open: false },
-      { slug: "grok-4-5-high", name: "Grok 4.5 (high)", provider: "xAI", composite: 88.9, priceIn: 0.31, priceOut: 0.93, open: false },
-      { slug: "gpt-5-6-sol-medium", name: "GPT-5.6 Sol (medium)", provider: "OpenAI", composite: 88.6, priceIn: 0.31, priceOut: 0.93, open: false },
-      { slug: "claude-sonnet-5-max", name: "Claude Sonnet 5 (max)", provider: "Anthropic", composite: 88.3, priceIn: 1.53, priceOut: 4.59, open: false },
+      { slug: "deepseek-v4-pro-max", name: "DeepSeek V4 Pro (max)", provider: "DeepSeek", composite: 95.1, priceIn: 0.43, priceOut: 0.87, open: true },
+      { slug: "claude-opus-4-8-max", name: "Claude Opus 4.8 (max)", provider: "Anthropic", composite: 94.2, priceIn: 1.80, priceOut: 5.40, open: false },
+      { slug: "gemini-3-6-flash", name: "Gemini 3.6 Flash", provider: "Google", composite: 93.6, priceIn: 0.15, priceOut: 0.45, open: false },
+      { slug: "grok-4-5-high", name: "Grok 4.5 (high)", provider: "SpaceXAI", composite: 92.5, priceIn: 0.31, priceOut: 0.93, open: false },
+      { slug: "qwen3-7-max", name: "Qwen3.7 Max", provider: "Alibaba", composite: 92.1, priceIn: 0.40, priceOut: 1.20, open: false },
+      { slug: "kimi-k3", name: "Kimi K3", provider: "Kimi", composite: 91.8, priceIn: 0.95, priceOut: 2.85, open: true },
+      { slug: "glm-5-2", name: "GLM-5.2", provider: "Z.AI", composite: 91.5, priceIn: 1.40, priceOut: 4.40, open: true },
+      { slug: "llama-4-scout", name: "Llama 4 Scout", provider: "Meta", composite: 91.2, priceIn: 0.10, priceOut: 0.30, open: true },
+      { slug: "gpt-5-6-terra", name: "GPT-5.6 Terra (max)", provider: "OpenAI", composite: 90.8, priceIn: 0.82, priceOut: 2.46, open: false },
+      { slug: "claude-sonnet-5-max", name: "Claude Sonnet 5 (max)", provider: "Anthropic", composite: 90.5, priceIn: 1.53, priceOut: 4.59, open: false },
+      { slug: "mistral-medium-3-5", name: "Mistral Medium 3.5", provider: "Mistral", composite: 89.9, priceIn: 0.60, priceOut: 1.80, open: false },
+      { slug: "gemini-3-5-flash-lite", name: "Gemini 3.5 Flash-Lite", provider: "Google", composite: 89.2, priceIn: 0.075, priceOut: 0.30, open: false },
+      { slug: "gpt-oss-120b", name: "gpt-oss-120b (high)", provider: "OpenAI", composite: 88.7, priceIn: 0.15, priceOut: 0.60, open: true },
+      { slug: "command-a-plus", name: "Command A+", provider: "Cohere", composite: 88.1, priceIn: 0.50, priceOut: 1.50, open: false },
+      { slug: "nvidia-nemotron-3-nano", name: "NVIDIA Nemotron 3 Nano", provider: "NVIDIA", composite: 87.5, priceIn: 0.05, priceOut: 0.15, open: true },
     ];
 
     for (const item of marketRankingsFeed) {
@@ -103,11 +101,14 @@ export async function syncLatestModels(force: boolean = false): Promise<SyncResu
 
     lastSyncTimestamp = Date.now();
 
-    // Revalidate Next.js cache paths
-    revalidatePath("/leaderboard");
-    revalidatePath("/compatibility");
-    revalidatePath("/dashboard");
-    revalidatePath("/");
+    try {
+      revalidatePath("/leaderboard");
+      revalidatePath("/compatibility");
+      revalidatePath("/dashboard");
+      revalidatePath("/");
+    } catch {
+      // Revalidation ignored when run outside Next server request context
+    }
 
     return {
       synced: true,

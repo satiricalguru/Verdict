@@ -24,22 +24,26 @@ function formatRunId(id: string): string {
 export default function DashboardPage() {
   const [showLauncher, setShowLauncher] = useState(false);
   const [runs, setRuns] = useState<RunItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const fetchRuns = () => {
-    setLoading(true);
+  const fetchRuns = React.useCallback(() => {
     fetch("/api/runs")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.runs) setRuns(data.runs);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.warn("Fetch runs error:", err);
+      })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchRuns();
-  }, []);
+  }, [fetchRuns]);
 
   return (
     <div className="space-y-8">

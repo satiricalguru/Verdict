@@ -7,13 +7,12 @@ import httpx
 class JudgePanelEvaluator:
     """
     Multi-model judge evaluator scoring generated artifacts across 5 dimensions:
-    Functionality (25%), Craft (25%), Design (20%), Creativity (15%), Fidelity (15%).
+    Functionality (30%), Craft (25%), Design (20%), Creativity (15%), Fidelity (10%).
     """
 
     async def evaluate_sample(self, raw_output: str, rubric_version: str = "v1.0", api_key: str = None) -> Dict[str, Any]:
-        await asyncio.sleep(0.7)
+        await asyncio.sleep(0.3)
         
-        # 1. Check if real judge LLM API call can be executed
         openai_key = api_key or os.getenv("OPENAI_API_KEY")
         
         scores = {
@@ -58,14 +57,17 @@ class JudgePanelEvaluator:
             except Exception as e:
                 print(f"Judge API call error: {e}")
 
-        # Weighted composite score calculation
+        # Weighted composite score calculation (30/25/20/15/10)
         composite = (
-            scores.get("functionality", 90.0) * 0.25 +
+            scores.get("functionality", 90.0) * 0.30 +
             scores.get("craft", 88.0) * 0.25 +
             scores.get("design", 86.0) * 0.20 +
             scores.get("creativity", 84.0) * 0.15 +
-            scores.get("fidelity", 86.0) * 0.15
+            scores.get("fidelity", 86.0) * 0.10
         )
+
+        score_values = [v for k, v in scores.items() if isinstance(v, (int, float))]
+        disagreement_flag = (max(score_values) - min(score_values)) > 15.0 if score_values else False
 
         return {
             "judge_models": ["gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro"],
@@ -73,5 +75,5 @@ class JudgePanelEvaluator:
             "scores": scores,
             "composite": round(composite, 1),
             "reasoning": reasoning,
-            "disagreement_flag": False,
+            "disagreement_flag": disagreement_flag,
         }

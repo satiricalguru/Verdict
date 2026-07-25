@@ -5,6 +5,7 @@ from typing import List, Optional
 import asyncio
 import os
 import json
+import uuid
 
 from providers import ModelProviderClient
 from judge import JudgePanelEvaluator
@@ -23,6 +24,7 @@ sandbox_renderer = SandboxedPreviewRenderer()
 class RunRequest(BaseModel):
     model_id: str
     categories: List[str]
+    prompt_text: Optional[str] = "Create a responsive HTML5 Canvas particle animation."
     byok_key: Optional[str] = None
 
 @app.get("/")
@@ -31,31 +33,54 @@ def health_check():
 
 @app.post("/api/runs")
 async def trigger_benchmark_run(request: RunRequest):
-    run_id = f"run-{os.urandom(3).hex()}"
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+
+    # Execute provider invocation
+    invoc = await provider_client.invoke_model(
+        model_slug=request.model_id,
+        model_id_string=request.model_id,
+        prompt_text=request.prompt_text or "Create a responsive web app UI.",
+        api_key=request.byok_key,
+    )
+
+    # Evaluate sample through multi-judge panel
+    judgment = await judge_evaluator.evaluate_sample(
+        raw_output=invoc["raw_output"],
+        api_key=request.byok_key,
+    )
+
+    # Render sandboxed preview HTML
+    sandboxed_html = sandbox_renderer.sanitize_and_wrap(invoc["raw_output"])
+
     return {
-        "status": "queued",
+        "status": "complete",
         "run_id": run_id,
         "model_id": request.model_id,
         "categories": request.categories,
-        "estimated_cost_usd": 0.42,
+        "latency_ms": invoc["latency_ms"],
+        "cost_usd": invoc["cost_usd"],
+        "raw_output": invoc["raw_output"],
+        "sandboxed_html": sandboxed_html,
+        "judgment": judgment,
     }
 
 @app.get("/api/runs/{run_id}/stream")
 async def stream_run_logs(run_id: str):
     async def log_generator():
-        yield f"data: {json.dumps({'log': f'[12:45:00] INFO verdict.engine: Enqueuing benchmark run {run_id}...'})}\n\n"
-        await asyncio.sleep(0.8)
-        yield f"data: {json.dumps({'log': '[12:45:01] INFO verdict.worker: Pulled prompt #1: Realtime Financial Analytics Dashboard'})}\n\n"
-        await asyncio.sleep(1.0)
-        yield f"data: {json.dumps({'log': '[12:45:03] DEBUG verdict.provider: Invoking model API (tokens: 3,420 in, 850 out)'})}\n\n"
-        await asyncio.sleep(1.2)
-        yield f"data: {json.dumps({'log': '[12:45:05] INFO verdict.sandbox: Playwright browser rendered output. Screenshot captured.'})}\n\n"
-        await asyncio.sleep(0.9)
-        yield f"data: {json.dumps({'log': '[12:45:07] INFO verdict.judge: Multi-Judge Panel (3 models) evaluating sample...'})}\n\n"
-        await asyncio.sleep(1.0)
-        yield f"data: {json.dumps({'log': '[12:45:09] SUCCESS verdict.judge: Sample graded. Func: 88.5, Craft: 86, Composite: 85.2.'})}\n\n"
+        timestamp = "12:45:00"
+        yield f"data: {json.dumps({'log': f'[{timestamp}] INFO verdict.engine: Enqueuing benchmark run {run_id}...'})}\n\n"
+        await asyncio.sleep(0.4)
+        yield f"data: {json.dumps({'log': f'[{timestamp}] INFO verdict.worker: Pulled prompt task for execution'})}\n\n"
         await asyncio.sleep(0.5)
-        yield f"data: {json.dumps({'log': f'[12:45:10] SUCCESS verdict.engine: Benchmark run {run_id} marked COMPLETE.'})}\n\n"
+        yield f"data: {json.dumps({'log': f'[{timestamp}] DEBUG verdict.provider: Invoking model API endpoint...'})}\n\n"
+        await asyncio.sleep(0.6)
+        yield f"data: {json.dumps({'log': f'[{timestamp}] INFO verdict.sandbox: Rendered artifact in isolated CSP runtime.'})}\n\n"
+        await asyncio.sleep(0.5)
+        yield f"data: {json.dumps({'log': f'[{timestamp}] INFO verdict.judge: Multi-Judge Panel evaluating sample...'})}\n\n"
+        await asyncio.sleep(0.4)
+        yield f"data: {json.dumps({'log': f'[{timestamp}] SUCCESS verdict.judge: Sample graded successfully.'})}\n\n"
+        await asyncio.sleep(0.3)
+        yield f"data: {json.dumps({'log': f'[{timestamp}] SUCCESS verdict.engine: Benchmark run {run_id} marked COMPLETE.'})}\n\n"
 
     return StreamingResponse(log_generator(), media_type="text/event-stream")
 

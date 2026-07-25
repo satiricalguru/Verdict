@@ -8,53 +8,43 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgres://verdict:verdict@db:5432/verdict
+      DATABASE_URL: file:./dev.db
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-verdict-production-encryption-key-32b-secret}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-verdict-super-secret-key-12345}
       NEXTAUTH_URL: http://localhost:3000
+      ENGINE_URL: http://engine:8000
     depends_on:
-      - db
       - engine
 
   engine:
     build:
-      context: ./engine
+      context: .
       dockerfile: Dockerfile.engine
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgres://verdict:verdict@db:5432/verdict
+      DATABASE_URL: file:./dev.db
       REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-verdict-production-encryption-key-32b-secret}
     depends_on:
-      - db
       - redis
 
   worker:
     build:
-      context: ./engine
+      context: .
       dockerfile: Dockerfile.engine
-    command: celery -A tasks worker --loglevel=info
+    command: python -m tasks
     environment:
-      DATABASE_URL: postgres://verdict:verdict@db:5432/verdict
+      DATABASE_URL: file:./dev.db
       REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-verdict-production-encryption-key-32b-secret}
     depends_on:
-      - db
       - redis
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: verdict
-      POSTGRES_PASSWORD: verdict
-      POSTGRES_DB: verdict
-    ports:
-      - "5432:5432"
-    volumes:
-      - verdict-db:/var/lib/postgresql/data
 
 volumes:
   verdict-db:

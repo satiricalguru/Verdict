@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { encryptKey } from "@/lib/crypto";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ keys: [] });
+  }
+
   const keys = await db.apiKey.findMany({
-    take: 10,
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 
@@ -11,9 +18,9 @@ export async function GET() {
     keys: keys.map((k) => ({
       id: k.id,
       provider: k.provider,
-      prefix: `${k.provider.toLowerCase()}-...${k.id.substring(k.id.length - 4)}`,
+      prefix: `${k.provider.toLowerCase()}-key-...${k.id.substring(k.id.length - 4)}`,
       createdAt: k.createdAt,
-      status: "Active",
+      status: "Connected",
     })),
   });
 }
@@ -27,7 +34,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Provider and key are required" }, { status: 400 });
     }
 
-    let user = await db.user.findFirst();
+    let user = await getCurrentUser();
+    if (!user) {
+      user = await db.user.findFirst();
+    }
     if (!user) {
       user = await db.user.create({
         data: {
@@ -37,27 +47,70 @@ export async function POST(request: Request) {
       });
     }
 
-    const encrypted = `enc_${Buffer.from(key).toString("base64").substring(0, 16)}`;
+    const encrypted = encryptKey(key);
 
-    const newKey = await db.apiKey.create({
-      data: {
+    const existingKey = await db.apiKey.findFirst({
+      where: {
         userId: user.id,
-        provider,
-        keyEncrypted: encrypted,
+        provider: { equals: provider },
       },
     });
+
+    let savedKey;
+    if (existingKey) {
+      savedKey = await db.apiKey.update({
+        where: { id: existingKey.id },
+        data: { keyEncrypted: encrypted, createdAt: new Date() },
+      });
+    } else {
+      savedKey = await db.apiKey.create({
+        data: {
+          userId: user.id,
+          provider,
+          keyEncrypted: encrypted,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
       key: {
-        id: newKey.id,
-        provider: newKey.provider,
-        prefix: `${provider.toLowerCase()}-...${newKey.id.substring(newKey.id.length - 4)}`,
-        status: "Active",
+        id: savedKey.id,
+        provider: savedKey.provider,
+        prefix: `${provider.toLowerCase()}-...${savedKey.id.substring(savedKey.id.length - 4)}`,
+        status: "Connected",
       },
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to add API key";
+    const message = error instanceof Error ? error.message : "Failed to save API key";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const provider = searchParams.get("provider");
+
+    if (!provider) {
+      return NextResponse.json({ error: "Provider parameter is required" }, { status: 400 });
+    }
+
+    await db.apiKey.deleteMany({
+      where: {
+        userId: user.id,
+        provider: { equals: provider },
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to disconnect key";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -16,7 +16,7 @@ export default async function LeaderboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--signal)]">
             <Sparkles className="w-4 h-4" />
-            <span>WoAI Bench & Canonical Public Benchmark Suite</span>
+            <span>Verdict Canonical Public Benchmark Suite</span>
           </div>
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--mist)]">
             <ShieldCheck className="w-3.5 h-3.5 text-[var(--pass)]" />

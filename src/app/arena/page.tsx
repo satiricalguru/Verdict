@@ -1,151 +1,458 @@
 "use client";
 
-import React, { useState } from "react";
-import { Swords, ThumbsUp, RefreshCw, Code, Eye } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Swords,
+  RefreshCw,
+  Code,
+  Eye,
+  Sparkles,
+  Scale,
+  KeyRound,
+  Play,
+  ShieldCheck,
+  HelpCircle,
+  ThumbsDown,
+  Loader2,
+} from "lucide-react";
+
+interface ModelOption {
+  id: string;
+  name: string;
+  provider: string;
+  composite: number;
+}
+
+interface MatchModel {
+  id: string;
+  name: string;
+  score: number;
+  elo: number;
+  code: string;
+}
 
 export default function ArenaPage() {
+  const [matchMode, setMatchMode] = useState<"blind" | "direct">("blind");
   const [blindMode, setBlindMode] = useState(true);
   const [voted, setVoted] = useState(false);
-  const [selectedWinner, setSelectedWinner] = useState<"A" | "B" | null>(null);
+  const [selectedWinner, setSelectedWinner] = useState<"A" | "B" | "TIE" | "BAD" | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingLive, setIsGeneratingLive] = useState(false);
   const [viewTabA, setViewTabA] = useState<"preview" | "code">("preview");
   const [viewTabB, setViewTabB] = useState<"preview" | "code">("preview");
+  const [promptTitle, setPromptTitle] = useState("Realtime Financial Analytics Dashboard");
+  const [customPromptInput, setCustomPromptInput] = useState("");
+  const [voteNotice, setVoteNotice] = useState<string | null>(null);
+  const [hasConnectedKeys, setHasConnectedKeys] = useState<boolean>(false);
+  const [keyNotice, setKeyNotice] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [allModels, setAllModels] = useState<ModelOption[]>([]);
+  const [selectedAId, setSelectedAId] = useState<string>("");
+  const [selectedBId, setSelectedBId] = useState<string>("");
 
-  const [modelA, setModelA] = useState({
+  const [modelA, setModelA] = useState<MatchModel>({
     id: "m1",
-    name: "Claude Fable 5",
-    score: 98.4,
-    elo: 1680,
-    code: `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { background: #0b0f19; color: #fff; font-family: sans-serif; padding: 20px; }
-    .card { background: #161c2e; border: 1px solid #2a3450; padding: 20px; border-radius: 8px; }
-    .btn { background: #4f40ff; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-    .bar { height: 10px; background: #3d2eff; border-radius: 5px; width: 85%; margin-top: 10px; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h3>Realtime Analytics Widget</h3>
-    <p>Live memory utilization & task throughput.</p>
-    <div class="bar"></div>
-    <br/>
-    <button class="btn" onclick="alert('Running live task!')">Trigger Stream Task</button>
-  </div>
-</body>
-</html>`,
+    name: "Model Alpha",
+    score: 0,
+    elo: 1500,
+    code: "",
   });
 
-  const [modelB, setModelB] = useState({
+  const [modelB, setModelB] = useState<MatchModel>({
     id: "m2",
-    name: "GPT-5.6 Sol",
-    score: 96.2,
-    elo: 1655,
-    code: `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { background: #0a0a0f; color: #e2e8f0; font-family: monospace; padding: 20px; }
-    .panel { background: #12121a; border: 1px dashed #f5a623; padding: 20px; border-radius: 6px; }
-    .chip { background: #f5a623; color: #000; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
-  </style>
-</head>
-<body>
-  <div class="panel">
-    <div>Status: <span class="chip">ACTIVE</span></div>
-    <h4>System Resource Gauge</h4>
-    <p>CPU Concurrency: 64 Workers | Memory: 4.2 GB</p>
-  </div>
-</body>
-</html>`,
+    name: "Model Beta",
+    score: 0,
+    elo: 1500,
+    code: "",
   });
 
-  const handleVote = async (winner: "A" | "B") => {
+  const handleFetchMatch = async (modelAId?: string, modelBId?: string) => {
+    setIsRefreshing(true);
+    setVoteNotice(null);
+    setKeyNotice(null);
+    try {
+      const res = await fetch("/api/arena/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelAId, modelBId }),
+      });
+      const data = await res.json();
+      if (data.modelA && data.modelB) {
+        if (data.title) setPromptTitle(data.title);
+        setModelA({
+          id: data.modelA.id,
+          name: data.modelA.name,
+          score: data.modelA.score,
+          elo: data.modelA.elo,
+          code: data.modelA.code,
+        });
+        setModelB({
+          id: data.modelB.id,
+          name: data.modelB.name,
+          score: data.modelB.score,
+          elo: data.modelB.elo,
+          code: data.modelB.code,
+        });
+        setSelectedAId(data.modelA.id);
+        setSelectedBId(data.modelB.id);
+        setVoted(false);
+        // In direct mode, never mask names
+        setBlindMode(matchMode === "blind");
+        setSelectedWinner(null);
+        setIsDemoMode(true); // Static templates until real samples exist
+      }
+    } catch (e) {
+      console.error("Failed to load match:", e);
+    } finally {
+      setIsRefreshing(false);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    // Parallel fetch: keys, models, initial match
+    Promise.all([
+      fetch("/api/keys").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/models").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/arena/match", { method: "POST" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([keysData, modelsData, matchData]) => {
+      if (!active) return;
+
+      if (keysData?.keys?.length > 0) setHasConnectedKeys(true);
+      if (modelsData?.models) setAllModels(modelsData.models);
+
+      if (matchData?.modelA && matchData?.modelB) {
+        if (matchData.title) setPromptTitle(matchData.title);
+        setModelA({
+          id: matchData.modelA.id,
+          name: matchData.modelA.name,
+          score: matchData.modelA.score,
+          elo: matchData.modelA.elo,
+          code: matchData.modelA.code,
+        });
+        setModelB({
+          id: matchData.modelB.id,
+          name: matchData.modelB.name,
+          score: matchData.modelB.score,
+          elo: matchData.modelB.elo,
+          code: matchData.modelB.code,
+        });
+        setSelectedAId(matchData.modelA.id);
+        setSelectedBId(matchData.modelB.id);
+      }
+
+      setIsLoading(false);
+    });
+
+    return () => { active = false; };
+  }, []);
+
+  const handleRunCustomMatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customPromptInput.trim()) return;
+
+    if (!hasConnectedKeys) {
+      setKeyNotice(
+        "API Key Required: To generate live model completions for your custom prompt, connect your provider API key in Settings first."
+      );
+      setVoteNotice(null);
+      return;
+    }
+
+    setIsGeneratingLive(true);
+    setVoteNotice(null);
+    setKeyNotice(null);
+
+    try {
+      setPromptTitle(customPromptInput.trim());
+      await handleFetchMatch(selectedAId, selectedBId);
+    } catch (err) {
+      console.error("Live arena run error:", err);
+    } finally {
+      setIsGeneratingLive(false);
+    }
+  };
+
+  const handleVote = async (winner: "A" | "B" | "TIE" | "BAD") => {
     setSelectedWinner(winner);
     setVoted(true);
-    setBlindMode(false);
+    setBlindMode(false); // Reveal identities after voting
     try {
-      await fetch("/api/arena/vote", {
+      const res = await fetch("/api/arena/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelAId: modelA.id, modelBId: modelB.id, winner }),
       });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleNewMatch = async () => {
-    setIsRefreshing(true);
-    try {
-      const res = await fetch("/api/arena/match", { method: "POST" });
       const data = await res.json();
-      if (data.modelA && data.modelB) {
-        setModelA((prev) => ({ ...prev, id: data.modelA.id, name: data.modelA.name, score: data.modelA.score, elo: data.modelA.elo }));
-        setModelB((prev) => ({ ...prev, id: data.modelB.id, name: data.modelB.name, score: data.modelB.score, elo: data.modelB.elo }));
-        setVoted(false);
-        setBlindMode(true);
-        setSelectedWinner(null);
+      if (data.success) {
+        if (winner === "BAD") {
+          setVoteNotice(`✓ Vote recorded: Both outputs marked as poor quality. No Elo change.`);
+        } else {
+          setVoteNotice(
+            `✓ Vote recorded! Arena Elo: ${data.modelA.name} (${data.modelA.arenaElo}) vs ${data.modelB.name} (${data.modelB.arenaElo})`
+          );
+        }
+      } else if (data.error) {
+        setVoteNotice(`⚠ ${data.error}`);
       }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setIsRefreshing(false);
+      console.error("Vote error:", e);
     }
   };
 
   const tabClass = (active: boolean) =>
-    `px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--signal)] ${
+    `px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--signal)] ${
       active
         ? "bg-[var(--paper)] text-[var(--ink)] border border-[var(--border)] shadow-xs"
-        : "text-[var(--mist)] hover:text-[var(--ink)] hover:bg-[var(--fog)]/60"
+        : "text-[var(--mist)] hover:text-[var(--ink)] hover:bg-[var(--fog)]"
     }`;
 
   const voteButtonClass = (side: "A" | "B") => {
     if (voted) {
       return selectedWinner === side
-        ? "bg-[var(--pass)] text-white shadow-xs"
+        ? "bg-[var(--pass)] text-black shadow-xs"
         : "bg-[var(--fog)] text-[var(--mist)] border border-[var(--border)]";
     }
     return "bg-[var(--ink)] text-[var(--paper)] hover:opacity-90 active:scale-[0.98]";
   };
 
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-[var(--signal)] animate-spin" />
+          <span className="text-sm font-mono text-[var(--mist)]">Loading Arena Match...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 max-w-7xl mx-auto py-6 font-sans">
       {/* Banner */}
-      <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-3">
+      <div className="rounded-xl bg-[var(--paper)] border border-[var(--border)] p-6 sm:p-8 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-mono text-[var(--signal)]">
-              <Swords className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[var(--signal)] uppercase tracking-wider font-semibold">
+              <Swords className="w-4 h-4 text-[var(--signal)]" />
               <span>Head-to-Head Arena</span>
             </div>
-            {/* h1 — font-sans font-semibold */}
-            <h1 className="font-sans font-semibold text-2xl sm:text-3xl text-[var(--ink)] -tracking-[0.02em] leading-tight">
-              Blind Model Comparison
+            <h1 className="font-sans font-bold text-2xl sm:text-3xl text-[var(--ink)] tracking-tight leading-tight">
+              Model Comparison Arena
             </h1>
-            {/* Collapsed dual-signal description — no redundant info cards */}
             <p className="text-sm text-[var(--mist)] max-w-2xl leading-relaxed">
-              Compare AI output quality blind — then reveal model identities. Your votes build crowd Elo ratings (
-              <ThumbsUp className="w-3.5 h-3.5 inline -mt-0.5 text-[var(--gauge)]" />
-              ) alongside auditable multi-judge scores across Functionality, Craft, Design, and Fidelity.
+              Compare AI model output side-by-side. In{" "}
+              <span className="text-[var(--ink)] font-semibold">Blind Mode</span>, identities are masked
+              as <span className="text-[var(--signal)] font-mono">Model Alpha</span> &amp;{" "}
+              <span className="text-[var(--signal)] font-mono">Model Beta</span> to eliminate bias.
+              Vote to reveal their real names and updated Elo ratings!
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Mode Switcher & Surprise Pairing */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <div className="flex p-1 bg-[var(--fog)] border border-[var(--border)] rounded-lg font-mono text-xs font-semibold">
+              <button
+                onClick={() => {
+                  setMatchMode("blind");
+                  if (!voted) setBlindMode(true);
+                }}
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  matchMode === "blind"
+                    ? "bg-[var(--paper)] text-[var(--ink)] shadow-xs"
+                    : "text-[var(--mist)] hover:text-[var(--ink)]"
+                }`}
+              >
+                Blind Match
+              </button>
+              <button
+                onClick={() => {
+                  setMatchMode("direct");
+                  setBlindMode(false); // #4: Never mask in direct mode
+                }}
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  matchMode === "direct"
+                    ? "bg-[var(--paper)] text-[var(--ink)] shadow-xs"
+                    : "text-[var(--mist)] hover:text-[var(--ink)]"
+                }`}
+              >
+                Select Models
+              </button>
+            </div>
+
             <button
-              onClick={handleNewMatch}
-              disabled={isRefreshing}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--fog)] border border-[var(--border)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--paper)] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--signal)]"
+              onClick={() => handleFetchMatch()}
+              disabled={isRefreshing || isGeneratingLive}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--signal)] text-black font-mono font-bold text-xs hover:bg-[var(--signal-hover)] transition-colors disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-              <span>{isRefreshing ? "Fetching..." : "Surprise Pairing"}</span>
+              <span>{isRefreshing ? "Pairing..." : "Surprise Pairing"}</span>
             </button>
           </div>
         </div>
+
+        {/* Direct Model Selection Bar */}
+        {matchMode === "direct" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[var(--fog)] border border-[var(--border)]">
+            <div>
+              <label className="block text-xs font-mono text-[var(--mist)] uppercase tracking-wider mb-1.5">
+                Model A (Left Panel)
+              </label>
+              <select
+                value={selectedAId}
+                onChange={(e) => {
+                  setSelectedAId(e.target.value);
+                  handleFetchMatch(e.target.value, selectedBId);
+                }}
+                className="w-full p-2.5 text-xs bg-[var(--paper)] border border-[var(--border)] rounded-lg text-[var(--ink)] font-mono focus:outline-none focus:border-[var(--signal)]"
+              >
+                {allModels.map((m) => (
+                  <option key={`a-${m.id}`} value={m.id}>
+                    {m.provider} — {m.name} ({m.composite} pts)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-[var(--mist)] uppercase tracking-wider mb-1.5">
+                Model B (Right Panel)
+              </label>
+              <select
+                value={selectedBId}
+                onChange={(e) => {
+                  setSelectedBId(e.target.value);
+                  handleFetchMatch(selectedAId, e.target.value);
+                }}
+                className="w-full p-2.5 text-xs bg-[var(--paper)] border border-[var(--border)] rounded-lg text-[var(--ink)] font-mono focus:outline-none focus:border-[var(--signal)]"
+              >
+                {allModels.map((m) => (
+                  <option key={`b-${m.id}`} value={m.id}>
+                    {m.provider} — {m.name} ({m.composite} pts)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Prompt Bar */}
+        <form onSubmit={handleRunCustomMatch} className="flex flex-col sm:flex-row gap-3 pt-1">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={customPromptInput}
+              onChange={(e) => setCustomPromptInput(e.target.value)}
+              placeholder="Enter a custom prompt to test both models live (requires API key)…"
+              className="w-full bg-[var(--fog)] border border-[var(--border)] rounded-lg pl-3.5 pr-10 py-2.5 text-xs font-mono text-[var(--ink)] placeholder-[var(--mist)] focus:outline-none focus:border-[var(--signal)]"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isGeneratingLive || !customPromptInput.trim()}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--paper)] border border-[var(--border)] text-[var(--ink)] font-mono font-bold text-xs hover:bg-[var(--fog)] transition-colors disabled:opacity-40 shrink-0 cursor-pointer"
+          >
+            <Play className="w-3.5 h-3.5 text-[var(--signal)]" />
+            <span>{isGeneratingLive ? "Generating..." : "Run Custom Match"}</span>
+          </button>
+        </form>
+
+        {/* Status bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono gap-2 pt-1">
+          <div className="flex items-center gap-2 text-[var(--mist)]">
+            <span className="text-[var(--ink)] font-semibold">Active Prompt:</span>
+            <span className="text-[var(--signal)]">{promptTitle}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-1 text-[var(--mist)] text-[11px]"
+              title="Model identities are masked until you vote"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-[var(--signal)]" />
+              <span>{blindMode ? "Blind Mask Active" : "Identities Revealed"}</span>
+            </div>
+
+            {hasConnectedKeys ? (
+              <span className="inline-flex items-center gap-1 text-[var(--pass)]">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>API Keys Connected</span>
+              </span>
+            ) : (
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex items-center gap-1 text-amber-400 hover:underline"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Connect API Keys</span>
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Demo mode banner (#5) */}
+        {isDemoMode && (
+          <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono text-xs flex items-center gap-2">
+            <HelpCircle className="w-4 h-4 shrink-0" />
+            <span>
+              Demo Mode: Previews are sample templates for illustration. Connect your API keys in{" "}
+              <Link href="/dashboard/settings" className="underline font-bold">
+                Settings
+              </Link>{" "}
+              and use &quot;Run Custom Match&quot; to generate live model completions.
+            </span>
+          </div>
+        )}
+
+        {/* Key notice */}
+        {keyNotice && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <KeyRound className="w-4 h-4 shrink-0" />
+              <span>{keyNotice}</span>
+            </div>
+            <Link
+              href="/dashboard/settings"
+              className="px-3 py-1 rounded bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition-colors shrink-0"
+            >
+              Connect Key
+            </Link>
+          </div>
+        )}
+
+        {/* Vote notice */}
+        {voteNotice && (
+          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center gap-2">
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span>{voteNotice}</span>
+          </div>
+        )}
       </div>
+
+      {/* Vote Actions Bar */}
+      {!voted && (
+        <div className="flex justify-center gap-3 flex-wrap">
+          <button
+            onClick={() => handleVote("TIE")}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[var(--fog)] border border-[var(--border)] text-xs font-mono text-[var(--mist)] hover:text-[var(--ink)] hover:border-[var(--mist)] transition-colors cursor-pointer"
+          >
+            <Scale className="w-3.5 h-3.5" />
+            <span>Both Are Equally Good (Tie)</span>
+          </button>
+          <button
+            onClick={() => handleVote("BAD")}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[var(--fog)] border border-[var(--border)] text-xs font-mono text-[var(--mist)] hover:text-red-400 hover:border-red-400/50 transition-colors cursor-pointer"
+          >
+            <ThumbsDown className="w-3.5 h-3.5" />
+            <span>Both Are Bad</span>
+          </button>
+        </div>
+      )}
 
       {/* Side-by-side Sandboxed Previews */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -153,12 +460,12 @@ export default function ArenaPage() {
         <div
           className={`rounded-xl bg-[var(--paper)] border ${
             voted && selectedWinner === "A"
-              ? "border-[var(--pass)]"
+              ? "border-[var(--pass)] shadow-lg"
               : "border-[var(--border)]"
-          } p-6 space-y-4 transition-colors`}
+          } p-6 space-y-4 transition-all`}
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-            <span className="font-sans font-semibold text-sm text-[var(--ink)]">
+            <span className="font-sans font-bold text-sm text-[var(--ink)]">
               {blindMode ? "Model Alpha" : modelA.name}
             </span>
             {!blindMode && (
@@ -189,22 +496,28 @@ export default function ArenaPage() {
                 <span>HTML Code</span>
               </button>
             </div>
-            <span className="text-[10px] font-mono text-[var(--pass)]">Sandbox CSP</span>
+            <span className="text-[10px] font-mono text-[var(--pass)]">Sandboxed CSP</span>
           </div>
 
-          {/* Output Window — responsive height */}
+          {/* Output Window */}
           <div className="h-64 sm:h-80 lg:h-72 xl:h-80 rounded-xl bg-[var(--fog)] border border-[var(--border)] overflow-hidden">
-            {viewTabA === "preview" ? (
-              <iframe
-                srcDoc={modelA.code}
-                title={`${blindMode ? "Anonymous Model Alpha" : modelA.name} — AI generated UI preview`}
-                className="w-full h-full border-none"
-                sandbox="allow-scripts"
-              />
+            {modelA.code ? (
+              viewTabA === "preview" ? (
+                <iframe
+                  srcDoc={modelA.code}
+                  title={`${blindMode ? "Model Alpha" : modelA.name} preview`}
+                  className="w-full h-full border-none"
+                  sandbox="allow-scripts"
+                />
+              ) : (
+                <pre className="p-4 text-xs font-mono text-[var(--ink)] overflow-auto h-full leading-relaxed">
+                  {modelA.code}
+                </pre>
+              )
             ) : (
-              <pre className="p-4 text-xs font-mono text-[var(--ink)] overflow-auto h-full leading-relaxed">
-                {modelA.code}
-              </pre>
+              <div className="flex items-center justify-center h-full">
+                <span className="text-xs font-mono text-[var(--mist)]">Waiting for match data...</span>
+              </div>
             )}
           </div>
 
@@ -212,15 +525,14 @@ export default function ArenaPage() {
           <button
             disabled={voted}
             onClick={() => handleVote("A")}
-            aria-label="Vote: Model Alpha output is better"
-            aria-pressed={voted && selectedWinner === "A"}
-            aria-disabled={voted}
-            className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all focus-visible:ring-2 focus-visible:ring-[var(--signal)] focus-visible:ring-offset-2 ${voteButtonClass("A")}`}
+            className={`w-full py-2.5 rounded-lg font-mono font-bold text-xs transition-all cursor-pointer ${voteButtonClass("A")}`}
           >
             {voted
               ? selectedWinner === "A"
-                ? "✓ Voted Model Alpha"
-                : "Model Alpha"
+                ? `✓ Voted ${blindMode ? "Model Alpha" : modelA.name}`
+                : blindMode
+                  ? "Model Alpha"
+                  : modelA.name
               : "Vote Alpha is Better"}
           </button>
         </div>
@@ -229,12 +541,12 @@ export default function ArenaPage() {
         <div
           className={`rounded-xl bg-[var(--paper)] border ${
             voted && selectedWinner === "B"
-              ? "border-[var(--pass)]"
+              ? "border-[var(--pass)] shadow-lg"
               : "border-[var(--border)]"
-          } p-6 space-y-4 transition-colors`}
+          } p-6 space-y-4 transition-all`}
         >
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-            <span className="font-sans font-semibold text-sm text-[var(--ink)]">
+            <span className="font-sans font-bold text-sm text-[var(--ink)]">
               {blindMode ? "Model Beta" : modelB.name}
             </span>
             {!blindMode && (
@@ -265,22 +577,28 @@ export default function ArenaPage() {
                 <span>HTML Code</span>
               </button>
             </div>
-            <span className="text-[10px] font-mono text-[var(--pass)]">Sandbox CSP</span>
+            <span className="text-[10px] font-mono text-[var(--pass)]">Sandboxed CSP</span>
           </div>
 
-          {/* Output Window — responsive height */}
+          {/* Output Window */}
           <div className="h-64 sm:h-80 lg:h-72 xl:h-80 rounded-xl bg-[var(--fog)] border border-[var(--border)] overflow-hidden">
-            {viewTabB === "preview" ? (
-              <iframe
-                srcDoc={modelB.code}
-                title={`${blindMode ? "Anonymous Model Beta" : modelB.name} — AI generated UI preview`}
-                className="w-full h-full border-none"
-                sandbox="allow-scripts"
-              />
+            {modelB.code ? (
+              viewTabB === "preview" ? (
+                <iframe
+                  srcDoc={modelB.code}
+                  title={`${blindMode ? "Model Beta" : modelB.name} preview`}
+                  className="w-full h-full border-none"
+                  sandbox="allow-scripts"
+                />
+              ) : (
+                <pre className="p-4 text-xs font-mono text-[var(--ink)] overflow-auto h-full leading-relaxed">
+                  {modelB.code}
+                </pre>
+              )
             ) : (
-              <pre className="p-4 text-xs font-mono text-[var(--ink)] overflow-auto h-full leading-relaxed">
-                {modelB.code}
-              </pre>
+              <div className="flex items-center justify-center h-full">
+                <span className="text-xs font-mono text-[var(--mist)]">Waiting for match data...</span>
+              </div>
             )}
           </div>
 
@@ -288,15 +606,14 @@ export default function ArenaPage() {
           <button
             disabled={voted}
             onClick={() => handleVote("B")}
-            aria-label="Vote: Model Beta output is better"
-            aria-pressed={voted && selectedWinner === "B"}
-            aria-disabled={voted}
-            className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all focus-visible:ring-2 focus-visible:ring-[var(--signal)] focus-visible:ring-offset-2 ${voteButtonClass("B")}`}
+            className={`w-full py-2.5 rounded-lg font-mono font-bold text-xs transition-all cursor-pointer ${voteButtonClass("B")}`}
           >
             {voted
               ? selectedWinner === "B"
-                ? "✓ Voted Model Beta"
-                : "Model Beta"
+                ? `✓ Voted ${blindMode ? "Model Beta" : modelB.name}`
+                : blindMode
+                  ? "Model Beta"
+                  : modelB.name
               : "Vote Beta is Better"}
           </button>
         </div>

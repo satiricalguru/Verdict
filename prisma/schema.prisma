@@ -27,7 +27,10 @@ model Model {
   isOpenWeight  Boolean  @default(false)
   capabilities  String   // JSON string
   composite     Float    @default(0)
+  arenaElo      Float    @default(1500)
   runs          Run[]
+  arenaMatchesA ArenaMatch[] @relation("ModelAMatches")
+  arenaMatchesB ArenaMatch[] @relation("ModelBMatches")
 }
 
 model Category {
@@ -40,14 +43,15 @@ model Category {
 }
 
 model Prompt {
-  id         String   @id @default(cuid())
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-  title      String
-  body       String
-  difficulty String
-  isPublic   Boolean  @default(false)
-  heldOut    Boolean  @default(true)
+  id           String       @id @default(cuid())
+  categoryId   String
+  category     Category     @relation(fields: [categoryId], references: [id])
+  title        String
+  body         String
+  difficulty   String
+  isPublic     Boolean      @default(false)
+  heldOut      Boolean      @default(true)
+  arenaMatches ArenaMatch[]
 }
 
 model Run {
@@ -75,38 +79,49 @@ model Sample {
 }
 
 model Judgment {
-  id            String  @id @default(cuid())
-  sampleId      String
-  sample        Sample  @relation(fields: [sampleId], references: [id])
-  judgeModelId  String
-  rubricVersion String
-  scores        String  // JSON string: { functionality, craft, design, creativity, fidelity }
-  reasoning     String
-  composite     Float
+  id               String  @id @default(cuid())
+  sampleId         String
+  sample           Sample  @relation(fields: [sampleId], references: [id])
+  judgeModelId     String
+  rubricVersion    String
+  scores           String  // JSON string: { functionality, craft, design, creativity, fidelity }
+  reasoning        String
+  composite        Float
+  disagreementFlag Boolean @default(false)
 }
 
 model ArenaMatch {
-  id       String  @id @default(cuid())
-  modelAId String
-  modelBId String
-  promptId String
-  blind    Boolean @default(true)
-  votesA   Int     @default(0)
-  votesB   Int     @default(0)
+  id        String   @id @default(cuid())
+  modelAId  String
+  modelA    Model    @relation("ModelAMatches", fields: [modelAId], references: [id])
+  modelBId  String
+  modelB    Model    @relation("ModelBMatches", fields: [modelBId], references: [id])
+  promptId  String
+  prompt    Prompt   @relation(fields: [promptId], references: [id])
+  blind     Boolean  @default(true)
+  swapped   Boolean  @default(false)
+  winner    String?  // "A" | "B" | "TIE" | "BAD"
+  votesA    Int      @default(0)
+  votesB    Int      @default(0)
+  voterIp   String?
+  createdAt DateTime @default(now())
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String?  @unique
-  apiKeys   ApiKey[]
+  id           String   @id @default(cuid())
+  name         String?
+  email        String?  @unique
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  apiKeys      ApiKey[]
 }
 
 model ApiKey {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  provider    String   // openai, anthropic, google, etc.
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  provider     String   // openai, anthropic, google, etc.
   keyEncrypted String
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 }
+

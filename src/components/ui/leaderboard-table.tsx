@@ -118,6 +118,62 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
     }
   };
 
+  // ── Dynamic Leaderboard Highlights ──
+  const topIntelligence = useMemo(() => {
+    return [...models].sort((a, b) => b.composite - a.composite);
+  }, [models]);
+
+  const topSpeed = useMemo(() => {
+    return [...models].sort((a, b) => {
+      const numA = parseFloat((a.tokensPerSec || "").replace(/[^0-9.]/g, "")) || 0;
+      const numB = parseFloat((b.tokensPerSec || "").replace(/[^0-9.]/g, "")) || 0;
+      return numB - numA;
+    });
+  }, [models]);
+
+  const topTtft = useMemo(() => {
+    return [...models].sort((a, b) => {
+      const numA = parseFloat((a.ttftMs || "").replace(/[^0-9.]/g, "")) || 9999;
+      const numB = parseFloat((b.ttftMs || "").replace(/[^0-9.]/g, "")) || 9999;
+      return numA - numB;
+    });
+  }, [models]);
+
+  const topCost = useMemo(() => {
+    return [...models].sort((a, b) => {
+      const numA = parseFloat((a.priceInput || "").replace(/[^0-9.]/g, "")) || 999;
+      const numB = parseFloat((b.priceInput || "").replace(/[^0-9.]/g, "")) || 999;
+      return numA - numB;
+    });
+  }, [models]);
+
+  const topContext = useMemo(() => {
+    return [...models].sort((a, b) => {
+      const numA = a.capabilities?.maxTokens || 0;
+      const numB = b.capabilities?.maxTokens || 0;
+      return numB - numA;
+    });
+  }, [models]);
+
+  const intName1 = topIntelligence[0]?.name || "Claude Fable 5";
+  const intName2 = topIntelligence[1]?.name || "GPT-5.6 Sol";
+
+  const speedName1 = topSpeed[0]?.name || "Gemini 3.6 Flash";
+  const speedName2 = topSpeed[1]?.name || "Mercury 2";
+  const speedVal = topSpeed[0]?.tokensPerSec ? `>${topSpeed[0].tokensPerSec}` : ">210 tokens/sec";
+
+  const ttftName1 = topTtft[0]?.name || "Gemini 2.5 Flash-Lite";
+  const ttftName2 = topTtft[1]?.name || "North Mini Code";
+  const ttftVal = topTtft[0]?.ttftMs ? `<${topTtft[0].ttftMs}` : "<140ms";
+
+  const costName1 = topCost[0]?.name || "DeepSeek V4 Pro";
+  const costName2 = topCost[1]?.name || "MiMo V2.5";
+  const costVal = topCost[0]?.priceInput ? `${topCost[0].priceInput}/1M` : "$0.43/1M";
+
+  const ctxName1 = topContext[0]?.name || "Llama 4 Scout";
+  const ctxName2 = topContext[1]?.name || "Grok 4.20";
+  const ctxVal = topContext[0]?.contextWindow ? `${topContext[0].contextWindow}` : "2M–10M";
+
   return (
     <div className="space-y-8">
       {/* BENCHMARK INDEX CARDS */}
@@ -131,7 +187,7 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
             <Brain className="w-4 h-4 text-[var(--signal)]" />
           </div>
           <p className="text-xs text-[var(--mist)] leading-relaxed">
-            <strong className="text-[var(--ink)] font-semibold">Claude Fable 5</strong> &amp; <strong className="text-[var(--ink)] font-semibold">GPT-5.6 Sol</strong> lead composite reasoning &amp; coding accuracy.
+            <strong className="text-[var(--ink)] font-semibold">{intName1}</strong> &amp; <strong className="text-[var(--ink)] font-semibold">{intName2}</strong> lead composite reasoning &amp; coding accuracy.
           </p>
           <div className="text-[10px] font-mono text-[var(--pass)]">SOTA S-Tier Rankings</div>
         </div>
@@ -145,12 +201,12 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
             <Gauge className="w-4 h-4 text-[var(--gauge)]" />
           </div>
           <p className="text-xs text-[var(--mist)] leading-relaxed">
-            <strong className="text-[var(--ink)] font-semibold">Gemini 3.6 Flash</strong> &amp; <strong className="text-[var(--ink)] font-semibold">Mercury 2</strong> top generation throughput (&gt;210 tokens/sec).
+            <strong className="text-[var(--ink)] font-semibold">{speedName1}</strong> &amp; <strong className="text-[var(--ink)] font-semibold">{speedName2}</strong> top generation throughput ({speedVal}).
           </p>
           <div className="text-[10px] font-mono text-[var(--gauge)]">Ultra Low Throughput Latency</div>
         </div>
 
-        {/* Latency (TTFT) Card — now uses --signal-alt instead of hardcoded purple */}
+        {/* Latency (TTFT) Card */}
         <div className="p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-tight bg-[var(--signal-alt)]/10 text-[var(--signal-alt)] border border-[var(--signal-alt)]/20">
@@ -159,7 +215,7 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
             <Clock className="w-4 h-4 text-[var(--signal-alt)]" />
           </div>
           <p className="text-xs text-[var(--mist)] leading-relaxed">
-            <strong className="text-[var(--ink)] font-semibold">Gemini 2.5 Flash-Lite</strong> &amp; <strong className="text-[var(--ink)] font-semibold">North Mini Code</strong> yield fastest first token response (&lt;140ms).
+            <strong className="text-[var(--ink)] font-semibold">{ttftName1}</strong> &amp; <strong className="text-[var(--ink)] font-semibold">{ttftName2}</strong> yield fastest first token response ({ttftVal}).
           </p>
           <div className="text-[10px] font-mono text-[var(--signal-alt)]">Realtime Voice &amp; Chat</div>
         </div>
@@ -173,12 +229,12 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
             <Coins className="w-4 h-4 text-[var(--pass)]" />
           </div>
           <p className="text-xs text-[var(--mist)] leading-relaxed">
-            <strong className="text-[var(--ink)] font-semibold">DeepSeek V4 Pro</strong> &amp; <strong className="text-[var(--ink)] font-semibold">MiMo V2.5</strong> offer SOTA intelligence at $0.43/1M input tokens.
+            <strong className="text-[var(--ink)] font-semibold">{costName1}</strong> &amp; <strong className="text-[var(--ink)] font-semibold">{costName2}</strong> offer SOTA intelligence at {costVal} input tokens.
           </p>
           <div className="text-[10px] font-mono text-[var(--pass)]">Lowest Cost per Sample</div>
         </div>
 
-        {/* Context Window Card — uses --signal instead of hardcoded blue */}
+        {/* Context Window Card */}
         <div className="p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-tight bg-[var(--signal)]/10 text-[var(--signal)] border border-[var(--signal)]/20">
@@ -187,7 +243,7 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
             <Layers className="w-4 h-4 text-[var(--signal)]" />
           </div>
           <p className="text-xs text-[var(--mist)] leading-relaxed">
-            <strong className="text-[var(--ink)] font-semibold">Llama 4 Scout</strong> &amp; <strong className="text-[var(--ink)] font-semibold">Grok 4.20</strong> support up to 2M–10M token context windows.
+            <strong className="text-[var(--ink)] font-semibold">{ctxName1}</strong> &amp; <strong className="text-[var(--ink)] font-semibold">{ctxName2}</strong> support up to {ctxVal} token context windows.
           </p>
           <div className="text-[10px] font-mono text-[var(--signal)]">Whole Repository Analysis</div>
         </div>

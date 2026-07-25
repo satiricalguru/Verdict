@@ -2,7 +2,14 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { Terminal, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Terminal, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
+
+interface RunDetail {
+  id: string;
+  model: string;
+  status: string;
+  costEstimate: number;
+}
 
 export default function RunLogPage({
   params,
@@ -12,8 +19,23 @@ export default function RunLogPage({
   const { id } = use(params);
   const [logs, setLogs] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [runDetail, setRunDetail] = useState<RunDetail | null>(null);
 
   useEffect(() => {
+    fetch(`/api/runs/${id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.run) {
+          setRunDetail({
+            id: data.run.id,
+            model: data.run.model?.name || data.run.model || "Target AI Model",
+            status: data.run.status || "complete",
+            costEstimate: data.run.costEstimate || 0.25,
+          });
+        }
+      })
+      .catch((err) => console.warn("Fetch run detail error:", err));
+
     const eventSource = new EventSource(`/api/runs/${id}/stream`);
 
     eventSource.onmessage = (event) => {
@@ -41,7 +63,7 @@ export default function RunLogPage({
   }, [id]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto py-6">
       <div>
         <Link
           href="/dashboard"
@@ -58,7 +80,7 @@ export default function RunLogPage({
             Execution Log: {id}
           </h1>
           <p className="text-xs font-mono text-[var(--mist)] mt-1">
-            Target Model: Nova-1 • Status: {isComplete ? "Completed" : "Streaming..."} • Total Cost: $0.42
+            Target Model: <strong className="text-[var(--ink)]">{runDetail?.model || "Frontier Model"}</strong> • Status: {isComplete ? "Completed" : "Streaming..."} • Total Cost: ${runDetail?.costEstimate?.toFixed(2) || "0.25"}
           </p>
         </div>
         <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-mono text-xs font-bold border ${
@@ -66,12 +88,12 @@ export default function RunLogPage({
             ? "bg-[var(--pass)]/10 text-[var(--pass)] border-[var(--pass)]/20"
             : "bg-[var(--signal)]/10 text-[var(--signal)] border-[var(--signal)]/20"
         }`}>
-          <CheckCircle2 className="w-4 h-4" />
+          {isComplete ? <CheckCircle2 className="w-4 h-4" /> : <RefreshCw className="w-4 h-4 animate-spin" />}
           <span>{isComplete ? "Run Complete" : "Live Streaming"}</span>
         </div>
       </div>
 
-      {/* Terminal Live Stream Panel — uses design tokens */}
+      {/* Terminal Live Stream Panel */}
       <div className="rounded-xl bg-[var(--fog)] border border-[var(--border)] p-5 font-mono text-xs text-[var(--ink)] space-y-2 shadow-xs overflow-hidden min-h-[340px]">
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 text-[var(--mist)] text-[11px]">
           <div className="flex items-center gap-2">

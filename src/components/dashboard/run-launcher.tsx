@@ -43,14 +43,19 @@ export default function RunLauncher({
   useEffect(() => {
     let isMounted = true;
     fetch("/api/models")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (isMounted && data.models && data.models.length > 0) {
           setModels(data.models);
           setSelectedModel(data.models[0].slug);
         }
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.warn("Fetch models error:", err);
+      })
       .finally(() => {
         if (isMounted) setLoadingModels(false);
       });
