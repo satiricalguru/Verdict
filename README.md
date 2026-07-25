@@ -2,10 +2,6 @@
 
   <br />
 
-  <a href="https://github.com/satiricalguru/Verdict">
-    <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Zap.png" alt="Verdict Lightning Icon" width="100" height="100" />
-  </a>
-
   <h1 align="center">⚡ VERDICT</h1>
 
   <p align="center">
@@ -19,6 +15,8 @@
     &nbsp;•&nbsp;
     <a href="#-blind-head-to-head-arena"><b>Try Model Arena »</b></a>
     &nbsp;•&nbsp;
+    <a href="#-screenshots"><b>Screenshots »</b></a>
+    &nbsp;•&nbsp;
     <a href="#-docker-self-hosting"><b>Self-Host Docker »</b></a>
   </p>
 
@@ -28,18 +26,42 @@
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
     <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="TailwindCSS" /></a>
     <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" /></a>
-    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License MIT" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License MIT" /></a>
   </p>
 
   <br />
 
-  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" alt="Animated Header Line Divider" />
-
 </div>
 
-<br />
+---
 
 > **Verdict** is an independent, 100% free, and self-hostable evaluation platform for AI models. It benchmarks **100+ SOTA AI models** (*Claude Fable 5*, *GPT-5.6 Sol*, *Gemini 3 Pro*, *DeepSeek V4 Pro*, *Qwen 3.7 Max*, *Grok 4.20*) on real-world interactive web application generation, agentic code refactoring, and multi-modal tasks — evaluated by an auditable multi-judge panel and blind crowd Elo rankings.
+
+---
+
+## 📸 Screenshots
+
+<!-- Add your application screenshots below -->
+
+<div align="center">
+
+  ### 🏆 Leaderboard & Scorecards
+  <!-- Replace src with your image path or URL -->
+  <img src="https://placehold.co/1200x630/090b10/ffffff/png?text=Verdict+Leaderboard+%26+Model+Rankings" alt="Verdict Leaderboard Screenshot" width="100%" />
+
+  <br /><br />
+
+  ### ⚔️ Side-by-Side Model Arena
+  <!-- Replace src with your image path or URL -->
+  <img src="https://placehold.co/1200x630/090b10/ffffff/png?text=Side-by-Side+Model+Arena" alt="Verdict Arena Screenshot" width="100%" />
+
+  <br /><br />
+
+  ### 🔐 BYOK Settings & Key Manager
+  <!-- Replace src with your image path or URL -->
+  <img src="https://placehold.co/1200x630/090b10/ffffff/png?text=BYOK+Provider+Settings" alt="Verdict BYOK Settings Screenshot" width="100%" />
+
+</div>
 
 ---
 
@@ -145,12 +167,9 @@ Every generated output is evaluated by 3 independent judge models across 5 weigh
 
 ## 📄 License
 
-Distributed under the **MIT License**. See `LICENSE` for details.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
 <div align="center">
   <br />
   <p>Built with ⚡ for the global AI developer community.</p>
-  <img src="https://raw.githubusercontent.com/andreasbm/readme-badges/master/badges/made-with-python.svg" alt="Made with Python" />
-  &nbsp;&nbsp;
-  <img src="https://raw.githubusercontent.com/andreasbm/readme-badges/master/badges/made-with-typescript.svg" alt="Made with TypeScript" />
 </div>
