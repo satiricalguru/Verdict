@@ -17,6 +17,7 @@ import {
   Coins,
   Layers,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 
 export interface LeaderboardModelItem {
@@ -67,15 +68,28 @@ function SkeletonRow() {
 
 export default function LeaderboardTable({ models }: { models: LeaderboardModelItem[] }) {
   const router = useRouter();
+  const [rankingMode, setRankingMode] = useState<"quality" | "coding" | "speed" | "latency" | "cost" | "open">("quality");
   const [activeFilter, setActiveFilter] = useState<"all" | "proprietary" | "open" | "reasoning">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"composite" | "frontend" | "game" | "svg" | "agentic">("composite");
   const [sortAsc, setSortAsc] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
+  // Auto-sync check on mount from artificialanalysis.ai feed
+  React.useEffect(() => {
+    fetch("/api/models/sync")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.lastSyncTime) setLastSyncTime(data.lastSyncTime);
+      })
+      .catch(() => {});
+  }, []);
 
   const filteredModels = useMemo(() => {
     return models
       .filter((m) => {
+        if (rankingMode === "open" && !m.isOpenWeight) return false;
         if (activeFilter === "proprietary" && m.isOpenWeight) return false;
         if (activeFilter === "open" && !m.isOpenWeight) return false;
         if (activeFilter === "reasoning") {
@@ -91,11 +105,29 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
         return true;
       })
       .sort((a, b) => {
+        if (rankingMode === "speed") {
+          const speedA = parseFloat((a.tokensPerSec || "").replace(/[^0-9.]/g, "")) || 0;
+          const speedB = parseFloat((b.tokensPerSec || "").replace(/[^0-9.]/g, "")) || 0;
+          return sortAsc ? speedA - speedB : speedB - speedA;
+        }
+        if (rankingMode === "latency") {
+          const latencyA = parseFloat((a.ttftMs || "").replace(/[^0-9.]/g, "")) || 9999;
+          const latencyB = parseFloat((b.ttftMs || "").replace(/[^0-9.]/g, "")) || 9999;
+          return sortAsc ? latencyB - latencyA : latencyA - latencyB;
+        }
+        if (rankingMode === "cost") {
+          const costA = parseFloat((a.priceInput || "").replace(/[^0-9.]/g, "")) || 999;
+          const costB = parseFloat((b.priceInput || "").replace(/[^0-9.]/g, "")) || 999;
+          return sortAsc ? costB - costA : costA - costB;
+        }
+        if (rankingMode === "coding") {
+          return sortAsc ? a.agentic - b.agentic : b.agentic - a.agentic;
+        }
         const valA = a[sortBy];
         const valB = b[sortBy];
         return sortAsc ? valA - valB : valB - valA;
       });
-  }, [models, activeFilter, searchQuery, sortBy, sortAsc]);
+  }, [models, rankingMode, activeFilter, searchQuery, sortBy, sortAsc]);
 
   const handleSort = (field: "composite" | "frontend" | "game" | "svg" | "agentic") => {
     if (sortBy === field) {
@@ -109,8 +141,10 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
   const handleSync = async () => {
     setSyncing(true);
     try {
-      await fetch("/api/models/sync", { method: "POST" });
-      router.refresh(); // soft refresh — no full page flash
+      const res = await fetch("/api/models/sync", { method: "POST" });
+      const data = await res.json();
+      if (data.lastSyncTime) setLastSyncTime(data.lastSyncTime);
+      router.refresh();
     } catch (e) {
       console.error(e);
     } finally {
@@ -249,6 +283,51 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
         </div>
       </div>
 
+      {/* ARTIFICIAL ANALYSIS RANKING VIEWS NAV BAR */}
+      <div className="p-2 rounded-xl bg-[var(--paper)] border border-[var(--border)] space-y-2">
+        <div className="flex items-center justify-between px-2 pt-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-[var(--ink)] font-bold uppercase tracking-wide">
+            <Sparkles className="w-4 h-4 text-[var(--signal)]" />
+            <span>Artificial Analysis Index Rankings</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[10px] text-[var(--mist)]">
+            <span className="w-2 h-2 rounded-full bg-[var(--pass)] animate-pulse" />
+            <span>Auto-Sync Active (artificialanalysis.ai)</span>
+            {lastSyncTime && (
+              <span className="hidden sm:inline border-l border-[var(--border)] pl-2 text-[var(--mist)]">
+                Last synced: {new Date(lastSyncTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div role="tablist" aria-label="Select Artificial Analysis ranking view" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 text-xs font-sans">
+          {[
+            { id: "quality", label: "Quality Index", icon: <Brain className="w-3.5 h-3.5 text-[var(--signal)]" /> },
+            { id: "coding", label: "Coding & Agentic", icon: <Shield className="w-3.5 h-3.5 text-[var(--signal-alt)]" /> },
+            { id: "speed", label: "Output Speed", icon: <Gauge className="w-3.5 h-3.5 text-[var(--gauge)]" /> },
+            { id: "latency", label: "Low Latency", icon: <Clock className="w-3.5 h-3.5 text-[var(--signal)]" /> },
+            { id: "cost", label: "Price Efficiency", icon: <Coins className="w-3.5 h-3.5 text-[var(--pass)]" /> },
+            { id: "open", label: "Open Weights", icon: <Zap className="w-3.5 h-3.5 text-[var(--pass)]" /> },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={rankingMode === tab.id}
+              onClick={() => setRankingMode(tab.id as typeof rankingMode)}
+              className={`px-3 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[var(--signal)] text-center ${
+                rankingMode === tab.id
+                  ? "bg-[var(--signal)]/10 text-[var(--signal)] border border-[var(--signal)]/30 font-bold shadow-xs"
+                  : "bg-[var(--fog)]/60 text-[var(--mist)] border border-transparent hover:text-[var(--ink)] hover:bg-[var(--fog)]"
+              }`}
+            >
+              {tab.icon}
+              <span className="truncate">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Controls: Search & Filter Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Filter Tab Group — proper ARIA roles */}
@@ -296,10 +375,10 @@ export default function LeaderboardTable({ models }: { models: LeaderboardModelI
             onClick={handleSync}
             disabled={syncing}
             title="Fetch latest rankings & token prices from external market index"
-            className="px-3 py-1.5 rounded-lg bg-[var(--paper)] border border-[var(--border)] text-xs font-semibold text-[var(--ink)] hover:bg-[var(--fog)] flex items-center gap-1.5 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-[var(--signal)] disabled:opacity-60"
+            className="px-3 py-1.5 rounded-lg bg-[var(--signal)] text-white text-xs font-semibold hover:opacity-90 flex items-center gap-1.5 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-[var(--signal)] disabled:opacity-60 shadow-xs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-[var(--mist)] ${syncing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">{syncing ? "Syncing..." : "Sync Market"}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">{syncing ? "Syncing..." : "Auto-Sync Now"}</span>
           </button>
         </div>
       </div>

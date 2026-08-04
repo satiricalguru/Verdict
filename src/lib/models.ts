@@ -28,22 +28,24 @@ export async function getLeaderboardModels() {
       // fallback
     }
 
-    // Calculate real dynamic composite score from judgments if present
-    let dynamicComposite = m.composite;
-    const allJudgments = m.runs.flatMap((r) => r.samples.flatMap((s) => s.judgments));
-    if (allJudgments.length > 0) {
-      const avgComp = allJudgments.reduce((acc, j) => acc + j.composite, 0) / allJudgments.length;
-      dynamicComposite = Number(avgComp.toFixed(1));
-    }
+    // Use canonical composite score from Artificial Analysis / model data
+    const dynamicComposite = m.composite;
 
-    // Artificial Analysis Benchmarking metrics (Speed, Latency, Context)
-    const isFlash = m.name.toLowerCase().includes("flash") || m.name.toLowerCase().includes("mini") || m.name.toLowerCase().includes("lite");
-    const baseTps = isFlash ? 220 : 95;
-    const tokensPerSec = Math.round(baseTps * (0.9 + (dynamicComposite % 10) * 0.02));
-    const ttftMs = Math.round((isFlash ? 140 : 260) * (1.1 - (dynamicComposite % 5) * 0.03));
-    const contextWindow = capabilitiesObj.maxTokens >= 1000000 ? `${capabilitiesObj.maxTokens / 1000000}M` : `${Math.round(capabilitiesObj.maxTokens / 1000)}k`;
+    // Real Artificial Analysis benchmarking metrics (Speed, Latency, Context)
+    const speed = (capabilitiesObj as Record<string, unknown>).medianOutputSpeed as number | undefined;
+    const ttft = (capabilitiesObj as Record<string, unknown>).medianTimeToFirstChunk as number | undefined;
+    const contextTokens = (capabilitiesObj as Record<string, unknown>).contextWindowTokens as number | undefined;
+    const tokensPerSec = speed != null ? `${Math.round(speed)} t/s` : "—";
+    const ttftMs = ttft != null ? `${Math.round(ttft)}ms` : "—";
+    const contextWindow =
+      contextTokens != null
+        ? contextTokens >= 1000000
+          ? `${Math.round(contextTokens / 1000000 * 10) / 10}M`
+          : `${Math.round(contextTokens / 1000)}k`
+        : "—";
 
     // Aggregate real category dimension scores if judgments exist
+    const allJudgments = m.runs.flatMap((r) => r.samples.flatMap((s) => s.judgments));
     let frontendScore = dynamicComposite;
     let gameScore = dynamicComposite;
     let svgScore = dynamicComposite;
@@ -85,16 +87,16 @@ export async function getLeaderboardModels() {
       provider: m.provider.name,
       logo: m.provider.name[0] || "M",
       composite: dynamicComposite,
-      trend: "+1.2",
-      tokensPerSec: `${tokensPerSec} t/s`,
-      ttftMs: `${ttftMs}ms`,
+      trend: "—",
+      tokensPerSec: tokensPerSec,
+      ttftMs: ttftMs,
       contextWindow: contextWindow,
       frontend: frontendScore,
       game: gameScore,
       svg: svgScore,
       agentic: agenticScore,
-      priceInput: `$${m.priceInput.toFixed(2)}`,
-      priceOutput: `$${m.priceOutput.toFixed(2)}`,
+      priceInput: m.priceInput != null ? `$${m.priceInput.toFixed(2)}` : "—",
+      priceOutput: m.priceOutput != null ? `$${m.priceOutput.toFixed(2)}` : "—",
       isOpenWeight: m.isOpenWeight,
       capabilities: capabilitiesObj,
     };
@@ -141,10 +143,10 @@ export async function getModelBySlug(slug: string) {
     slug: m.slug,
     provider: m.provider.name,
     modelIdString: m.modelIdString,
-    releaseDate: m.releaseDate ? m.releaseDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "2025",
+    releaseDate: m.releaseDate ? m.releaseDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—",
     composite: dynamicComposite,
-    priceInput: `$${m.priceInput.toFixed(2)} per 1M tokens`,
-    priceOutput: `$${m.priceOutput.toFixed(2)} per 1M tokens`,
+    priceInput: m.priceInput != null ? `$${m.priceInput.toFixed(2)} per 1M tokens` : "—",
+    priceOutput: m.priceOutput != null ? `$${m.priceOutput.toFixed(2)} per 1M tokens` : "—",
     isOpenWeight: m.isOpenWeight,
     capabilities: capabilitiesObj,
     categories: [

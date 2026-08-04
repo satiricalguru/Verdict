@@ -22,8 +22,8 @@ model Model {
   slug          String   @unique
   modelIdString String
   releaseDate   DateTime?
-  priceInput    Float
-  priceOutput   Float
+  priceInput    Float?
+  priceOutput   Float?
   isOpenWeight  Boolean  @default(false)
   capabilities  String   // JSON string
   composite     Float    @default(0)
