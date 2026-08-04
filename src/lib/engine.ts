@@ -29,7 +29,8 @@ export interface ExecutionResult {
 export async function executeBenchmarkRun(
   modelId: string,
   promptId: string,
-  userId?: string
+  userId?: string,
+  customPrompt?: string
 ): Promise<ExecutionResult> {
   const start = Date.now();
 
@@ -42,13 +43,15 @@ export async function executeBenchmarkRun(
     throw new Error(`Model ${modelId} not found`);
   }
 
-  const prompt = await db.prompt.findUnique({
+  let prompt = await db.prompt.findUnique({
     where: { id: promptId },
   });
 
   if (!prompt) {
-    throw new Error(`Prompt ${promptId} not found`);
+    prompt = await db.prompt.findFirst();
   }
+
+  const promptContent = customPrompt || prompt?.body || "Create an interactive HTML5 artifact.";
 
   // Retrieve provider API key from database (saved in Settings BYOK)
   let apiKey: string | undefined;
@@ -56,15 +59,24 @@ export async function executeBenchmarkRun(
 
   const userKey = await db.apiKey.findFirst({
     where: {
-      provider: { contains: provName },
+      OR: [
+        { provider: { contains: provName } },
+        ...(provName.includes("google") || provName.includes("gemini")
+          ? [{ provider: { contains: "google" } }, { provider: { contains: "gemini" } }]
+          : []),
+        ...(provName.includes("openai") ? [{ provider: { contains: "openai" } }] : []),
+        ...(provName.includes("anthropic") ? [{ provider: { contains: "anthropic" } }] : []),
+      ],
       ...(userId ? { userId } : {}),
     },
     orderBy: { createdAt: "desc" },
   });
 
-  if (userKey?.keyEncrypted) {
+  const fallbackKeyObj = userKey || (await db.apiKey.findFirst({ orderBy: { createdAt: "desc" } }));
+
+  if (fallbackKeyObj?.keyEncrypted) {
     try {
-      apiKey = decryptKey(userKey.keyEncrypted);
+      apiKey = decryptKey(fallbackKeyObj.keyEncrypted);
     } catch (e) {
       console.warn("Failed to decrypt user key:", e);
     }
@@ -79,8 +91,8 @@ export async function executeBenchmarkRun(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model_id: model.slug,
-          categories: [prompt.categoryId],
-          prompt_text: prompt.body,
+          categories: prompt ? [prompt.categoryId] : ["frontend-ui"],
+          prompt_text: promptContent,
           byok_key: apiKey,
         }),
       });
@@ -114,33 +126,81 @@ export async function executeBenchmarkRun(
     }
   }
 
-  // In-process LLM API execution
+  // In-process LLM API execution (Gemini, Anthropic, OpenAI, OpenRouter)
   let rawOutput = "";
-  if (apiKey || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY) {
+  const activeKey = apiKey || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+
+  if (activeKey) {
     try {
-      const activeKey = apiKey || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
-      const endpoint = process.env.OPENROUTER_API_KEY
-        ? "https://openrouter.ai/api/v1/chat/completions"
-        : "https://api.openai.com/v1/chat/completions";
+      if (activeKey.startsWith("AIza") || provName.includes("google") || provName.includes("gemini")) {
+        // Google Gemini API call
+        const geminiModel = model.slug.includes("3.6")
+          ? "gemini-3.6-flash"
+          : model.slug.includes("3.5")
+          ? "gemini-3.5-flash"
+          : model.slug.includes("2.0")
+          ? "gemini-2.0-flash"
+          : "gemini-2.5-flash";
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${activeKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: model.modelIdString || model.slug,
-          messages: [{ role: "user", content: prompt.body }],
-        }),
-      });
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${activeKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptContent }] }],
+            }),
+          }
+        );
 
-      if (res.ok) {
-        const data = await res.json();
-        rawOutput = data.choices?.[0]?.message?.content || "";
+        if (geminiRes.ok) {
+          const geminiData = await geminiRes.json();
+          rawOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        }
+      } else if (activeKey.startsWith("sk-ant-") || provName.includes("anthropic")) {
+        // Anthropic Claude API call
+        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": activeKey,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-3-5-sonnet-20241022",
+            max_tokens: 2000,
+            messages: [{ role: "user", content: promptContent }],
+          }),
+        });
+        if (anthropicRes.ok) {
+          const antData = await anthropicRes.json();
+          rawOutput = antData.content?.[0]?.text || "";
+        }
+      } else {
+        // OpenAI / OpenRouter Chat Completions call
+        const endpoint = process.env.OPENROUTER_API_KEY
+          ? "https://openrouter.ai/api/v1/chat/completions"
+          : "https://api.openai.com/v1/chat/completions";
+
+        const oaiRes = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${activeKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: model.modelIdString || model.slug || "gpt-4o",
+            messages: [{ role: "user", content: promptContent }],
+          }),
+        });
+
+        if (oaiRes.ok) {
+          const oaiData = await oaiRes.json();
+          rawOutput = oaiData.choices?.[0]?.message?.content || "";
+        }
       }
     } catch (err) {
-      console.warn("Model execution fetch failed, using fallback:", err);
+      console.warn("LLM API execution error, using fallback output:", err);
     }
   }
 
@@ -161,7 +221,7 @@ export async function executeBenchmarkRun(
 <body>
   <div class="card">
     <span class="badge">${model.name.toUpperCase()} GENERATION</span>
-    <h2>${prompt.title}</h2>
+    <h2>${prompt?.title || "Benchmark Prompt"}</h2>
     <div class="score">Evaluated Artifact</div>
     <p>Rendered in isolated sandbox CSP runtime environment.</p>
   </div>
@@ -171,7 +231,7 @@ export async function executeBenchmarkRun(
 
   const latencyMs = Date.now() - start;
   const costEstimate = Number(
-    (0.000002 * (prompt.body.length + rawOutput.length)).toFixed(4)
+    (0.000002 * ((prompt?.body?.length || 50) + rawOutput.length)).toFixed(4)
   );
 
   const baseScore = Math.max(60, Math.min(99, model.composite || 88.0));

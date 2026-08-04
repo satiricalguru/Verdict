@@ -48,12 +48,12 @@ export default function PlaygroundPage() {
         fetch("/api/runs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ modelId: modelA, categories: ["frontend-ui"] }),
+          body: JSON.stringify({ modelId: modelA, categories: ["frontend-ui"], promptText: prompt }),
         }),
         fetch("/api/runs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ modelId: modelB, categories: ["frontend-ui"] }),
+          body: JSON.stringify({ modelId: modelB, categories: ["frontend-ui"], promptText: prompt }),
         }),
       ]);
 

@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { modelId, categories } = body;
+    const { modelId, categories, promptText } = body;
 
     const model = await db.model.findFirst({
       where: {
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
 
     const runId = `run-${crypto.randomUUID().substring(0, 8)}`;
     
-    // Execute benchmark evaluation through engine runner
-    const execResult = await executeBenchmarkRun(model.id, prompt.id);
+    // Execute benchmark evaluation through engine runner with custom prompt support
+    const execResult = await executeBenchmarkRun(model.id, prompt.id, undefined, promptText);
 
     const run = await db.run.create({
       data: {
