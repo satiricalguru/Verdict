@@ -3,6 +3,7 @@ import os
 import json
 from typing import Dict, Any
 import httpx
+from providers import classify_api_key
 
 class JudgePanelEvaluator:
     """
@@ -13,7 +14,13 @@ class JudgePanelEvaluator:
     async def evaluate_sample(self, raw_output: str, rubric_version: str = "v1.0", api_key: str = None) -> Dict[str, Any]:
         await asyncio.sleep(0.3)
         
-        openai_key = api_key or os.getenv("OPENAI_API_KEY")
+        # Only an OpenAI-format key can be sent to the OpenAI judge endpoint;
+        # a provider key (Anthropic/Gemini/OpenRouter) must never be forwarded.
+        openai_key = None
+        if classify_api_key(api_key or "") == "openai":
+            openai_key = api_key
+        if not openai_key:
+            openai_key = os.getenv("OPENAI_API_KEY")
         
         scores = {
             "functionality": 91.0,

@@ -21,16 +21,193 @@ export interface ExecutionResult {
   };
 }
 
+const FETCH_TIMEOUT_MS = 30_000;
+
+/** Builds an AbortSignal that times out long-running provider calls. */
+function timeoutSignal() {
+  return AbortSignal.timeout(FETCH_TIMEOUT_MS);
+}
+
+/**
+ * Resolves the API key to use for a run.
+ * Priority: 1) BYOK key passed for this request, 2) the requesting user's
+ * saved key for the model's provider, 3) server environment keys.
+ * Anonymous users NEVER see other users' saved keys — only env keys.
+ */
+async function resolveApiKey(
+  providerName: string,
+  userId: string | undefined,
+  byokKey?: string
+): Promise<string | undefined> {
+  if (byokKey) return byokKey;
+
+  const provName = providerName.toLowerCase();
+  const providerMatches = (stored: string) => {
+    const s = stored.toLowerCase();
+    return (
+      s.includes(provName) ||
+      (provName.includes("google") && s.includes("google")) ||
+      (provName.includes("gemini") && s.includes("gemini")) ||
+      (provName.includes("openai") && s.includes("openai")) ||
+      (provName.includes("anthropic") && s.includes("anthropic")) ||
+      (provName.includes("openrouter") && s.includes("openrouter"))
+    );
+  };
+
+  if (userId) {
+    const userKey = await db.apiKey.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+    const matched = userKey && providerMatches(userKey.provider) ? userKey : null;
+    if (matched?.keyEncrypted) {
+      try {
+        return decryptKey(matched.keyEncrypted);
+      } catch (e) {
+        console.warn("Failed to decrypt user key:", e);
+      }
+    }
+  }
+
+  return (
+    process.env.GEMINI_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.ANTHROPIC_API_KEY
+  );
+}
+
+/** Maps a Verdict model to the provider's real API model identifier. */
+function resolveApiModelName(model: { slug: string; modelIdString: string }): string {
+  const explicit = model.modelIdString;
+  if (explicit && explicit !== model.slug) return explicit;
+
+  // Fallback mapping for known Gemini generations when the feed slug
+  // is not itself an API model ID.
+  if (explicit.includes("gemini")) {
+    if (explicit.includes("3.6")) return "gemini-3.6-flash";
+    if (explicit.includes("3.5")) return "gemini-3.5-flash";
+    if (explicit.includes("2.0")) return "gemini-2.0-flash";
+    if (explicit.includes("2.5")) return "gemini-2.5-flash";
+  }
+  return explicit;
+}
+
+async function callGemini(
+  apiKey: string,
+  modelName: string,
+  promptContent: string
+): Promise<string> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      modelName
+    )}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: timeoutSignal(),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptContent }] }],
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Gemini API error: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+async function callAnthropic(
+  apiKey: string,
+  modelName: string,
+  promptContent: string
+): Promise<string> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    signal: timeoutSignal(),
+    body: JSON.stringify({
+      model: modelName,
+      max_tokens: 2000,
+      messages: [{ role: "user", content: promptContent }],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Anthropic API error: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || "";
+}
+
+async function callOpenAICompat(
+  apiKey: string,
+  modelName: string,
+  promptContent: string
+): Promise<string> {
+  const endpoint = process.env.OPENROUTER_API_KEY
+    ? "https://openrouter.ai/api/v1/chat/completions"
+    : "https://api.openai.com/v1/chat/completions";
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    signal: timeoutSignal(),
+    body: JSON.stringify({
+      model: modelName,
+      messages: [{ role: "user", content: promptContent }],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Chat completions error: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+function fallbackArtifact(modelName: string, promptTitle: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${modelName} Benchmark Artifact</title>
+  <style>
+    body { background: #0b0d14; color: #e4e4e7; font-family: sans-serif; padding: 2rem; margin: 0; }
+    .card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 2rem; max-width: 640px; margin: 2rem auto; }
+    .badge { background: #6366f1; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
+    .score { font-size: 2.5rem; font-weight: 800; color: #f59e0b; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">${modelName.toUpperCase()} GENERATION</span>
+    <h2>${promptTitle}</h2>
+    <div class="score">Evaluated Artifact</div>
+    <p>Rendered in isolated sandbox CSP runtime environment.</p>
+  </div>
+</body>
+</html>`;
+}
+
 /**
  * Runs evaluation pipeline for a specified model & prompt.
  * Connects to Python execution engine if ENGINE_URL is set,
- * or runs in-process TS pipeline.
+ * or runs in-process LLM execution.
  */
 export async function executeBenchmarkRun(
   modelId: string,
   promptId: string,
   userId?: string,
-  customPrompt?: string
+  customPrompt?: string,
+  byokKey?: string
 ): Promise<ExecutionResult> {
   const start = Date.now();
 
@@ -52,35 +229,11 @@ export async function executeBenchmarkRun(
   }
 
   const promptContent = customPrompt || prompt?.body || "Create an interactive HTML5 artifact.";
-
-  // Retrieve provider API key from database (saved in Settings BYOK)
-  let apiKey: string | undefined;
   const provName = model.provider.name.toLowerCase();
 
-  const userKey = await db.apiKey.findFirst({
-    where: {
-      OR: [
-        { provider: { contains: provName } },
-        ...(provName.includes("google") || provName.includes("gemini")
-          ? [{ provider: { contains: "google" } }, { provider: { contains: "gemini" } }]
-          : []),
-        ...(provName.includes("openai") ? [{ provider: { contains: "openai" } }] : []),
-        ...(provName.includes("anthropic") ? [{ provider: { contains: "anthropic" } }] : []),
-      ],
-      ...(userId ? { userId } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const fallbackKeyObj = userKey || (await db.apiKey.findFirst({ orderBy: { createdAt: "desc" } }));
-
-  if (fallbackKeyObj?.keyEncrypted) {
-    try {
-      apiKey = decryptKey(fallbackKeyObj.keyEncrypted);
-    } catch (e) {
-      console.warn("Failed to decrypt user key:", e);
-    }
-  }
+  // Scope API keys to the requesting user (or server env keys) — never
+  // other users' saved keys.
+  const apiKey = await resolveApiKey(model.provider.name, userId, byokKey);
 
   // Try Python Engine HTTP call first if ENGINE_URL is configured
   const engineUrl = process.env.ENGINE_URL;
@@ -89,6 +242,7 @@ export async function executeBenchmarkRun(
       const res = await fetch(`${engineUrl}/api/runs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: timeoutSignal(),
         body: JSON.stringify({
           model_id: model.slug,
           categories: prompt ? [prompt.categoryId] : ["frontend-ui"],
@@ -128,76 +282,16 @@ export async function executeBenchmarkRun(
 
   // In-process LLM API execution (Gemini, Anthropic, OpenAI, OpenRouter)
   let rawOutput = "";
-  const activeKey = apiKey || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const apiModelName = resolveApiModelName(model);
 
-  if (activeKey) {
+  if (apiKey) {
     try {
-      if (activeKey.startsWith("AIza") || provName.includes("google") || provName.includes("gemini")) {
-        // Google Gemini API call
-        const geminiModel = model.slug.includes("3.6")
-          ? "gemini-3.6-flash"
-          : model.slug.includes("3.5")
-          ? "gemini-3.5-flash"
-          : model.slug.includes("2.0")
-          ? "gemini-2.0-flash"
-          : "gemini-2.5-flash";
-
-        const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${activeKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: promptContent }] }],
-            }),
-          }
-        );
-
-        if (geminiRes.ok) {
-          const geminiData = await geminiRes.json();
-          rawOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        }
-      } else if (activeKey.startsWith("sk-ant-") || provName.includes("anthropic")) {
-        // Anthropic Claude API call
-        const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "x-api-key": activeKey,
-            "anthropic-version": "2023-06-01",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-3-5-sonnet-20241022",
-            max_tokens: 2000,
-            messages: [{ role: "user", content: promptContent }],
-          }),
-        });
-        if (anthropicRes.ok) {
-          const antData = await anthropicRes.json();
-          rawOutput = antData.content?.[0]?.text || "";
-        }
+      if (apiKey.startsWith("AIza") || provName.includes("google") || provName.includes("gemini")) {
+        rawOutput = await callGemini(apiKey, apiModelName, promptContent);
+      } else if (apiKey.startsWith("sk-ant-") || provName.includes("anthropic")) {
+        rawOutput = await callAnthropic(apiKey, apiModelName, promptContent);
       } else {
-        // OpenAI / OpenRouter Chat Completions call
-        const endpoint = process.env.OPENROUTER_API_KEY
-          ? "https://openrouter.ai/api/v1/chat/completions"
-          : "https://api.openai.com/v1/chat/completions";
-
-        const oaiRes = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${activeKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: model.modelIdString || model.slug || "gpt-4o",
-            messages: [{ role: "user", content: promptContent }],
-          }),
-        });
-
-        if (oaiRes.ok) {
-          const oaiData = await oaiRes.json();
-          rawOutput = oaiData.choices?.[0]?.message?.content || "";
-        }
+        rawOutput = await callOpenAICompat(apiKey, apiModelName, promptContent);
       }
     } catch (err) {
       console.warn("LLM API execution error, using fallback output:", err);
@@ -205,28 +299,7 @@ export async function executeBenchmarkRun(
   }
 
   if (!rawOutput) {
-    rawOutput = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${model.name} Benchmark Artifact</title>
-  <style>
-    body { background: #0b0d14; color: #e4e4e7; font-family: sans-serif; padding: 2rem; margin: 0; }
-    .card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 2rem; max-width: 640px; margin: 2rem auto; }
-    .badge { background: #6366f1; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
-    .score { font-size: 2.5rem; font-weight: 800; color: #f59e0b; margin: 1rem 0; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <span class="badge">${model.name.toUpperCase()} GENERATION</span>
-    <h2>${prompt?.title || "Benchmark Prompt"}</h2>
-    <div class="score">Evaluated Artifact</div>
-    <p>Rendered in isolated sandbox CSP runtime environment.</p>
-  </div>
-</body>
-</html>`;
+    rawOutput = fallbackArtifact(model.name, prompt?.title || "Benchmark Prompt");
   }
 
   const latencyMs = Date.now() - start;

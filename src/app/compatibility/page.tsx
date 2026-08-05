@@ -16,7 +16,7 @@ import {
   SYSTEM_RAM_OPTIONS,
   CPU_CORE_OPTIONS,
   LOCAL_MODELS_DATASET,
-  QuantInfo,
+  type QuantInfo,
 } from "@/lib/hardware-models";
 
 interface CloudModelData {
@@ -173,10 +173,10 @@ export default function CompatibilityPage() {
 
   // Statistics Summary
   const runnableAtQ4Count = useMemo(() => {
-    return evaluatedLocalModels.filter(
-      (m) =>
-        m.quants.find((q) => q.name === "Q4_K_M")!.vramGb <= totalMemoryAvailableGb
-    ).length;
+    return evaluatedLocalModels.filter((m) => {
+      const q4 = m.quants.find((q) => q.name === "Q4_K_M");
+      return Boolean(q4 && q4.vramGb <= totalMemoryAvailableGb);
+    }).length;
   }, [evaluatedLocalModels, totalMemoryAvailableGb]);
 
   // Hero Recommendation ("BEST FOR YOU")

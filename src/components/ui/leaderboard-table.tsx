@@ -57,7 +57,7 @@ function SkeletonRow() {
           </div>
         </div>
       </td>
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 11 }).map((_, i) => (
         <td key={i} className="py-3.5 px-4">
           <div className="h-3 w-12 rounded-md bg-[var(--border)] animate-pulse" />
         </td>

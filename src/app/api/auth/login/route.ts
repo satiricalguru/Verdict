@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hashPassword, createSession } from "@/lib/auth";
+import { verifyPassword, createSession } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -14,20 +14,11 @@ export async function POST(request: Request) {
       );
     }
 
-    let user = await db.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email: email.toLowerCase().trim() },
     });
 
-    if (!user) {
-      // Create user if demo account
-      user = await db.user.create({
-        data: {
-          name: email.split("@")[0] || "User",
-          email: email.toLowerCase().trim(),
-          passwordHash: hashPassword(password),
-        },
-      });
-    } else if (user.passwordHash && user.passwordHash !== hashPassword(password)) {
+    if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }

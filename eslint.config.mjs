@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone CJS scraper tool + generated data dumps.
+    "scraper-output/**",
   ]),
 ]);
 

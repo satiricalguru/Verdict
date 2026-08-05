@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Sparkles, Eye, Code, ExternalLink, Filter } from "lucide-react";
 import ProviderLogo from "@/components/ui/provider-logo";
 
@@ -224,17 +224,37 @@ button:hover{background:#2ea043;}
   },
 ];
 
-const CATEGORIES = ["All", "Frontend UI", "Game Dev", "SVG Art", "Creative", "Agentic", "3D Graphics", "Data Viz", "Animation", "Full-Stack"];
-
 export default function ShowcasePage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [viewMode, setViewMode] = useState<Record<string, "preview" | "code">>({});
+  const [items, setItems] = useState<typeof SHOWCASE_ITEMS>(SHOWCASE_ITEMS);
+  const [isLive, setIsLive] = useState(false);
 
-  const filtered = useMemo(() =>
-    activeCategory === "All"
-      ? SHOWCASE_ITEMS
-      : SHOWCASE_ITEMS.filter((i) => i.category === activeCategory),
-    [activeCategory]
+  // Load real judged generations from the database; fall back to curated
+  // demo artifacts when no benchmark runs exist yet.
+  useEffect(() => {
+    fetch("/api/showcase")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.items && data.items.length > 0) {
+          setItems(data.items);
+          setIsLive(true);
+        }
+      })
+      .catch((err) => console.warn("Fetch showcase samples error:", err));
+  }, []);
+
+  const categories = useMemo(
+    () => ["All", ...new Set(items.map((i) => i.category))],
+    [items]
+  );
+
+  const filtered = useMemo(
+    () =>
+      activeCategory === "All"
+        ? items
+        : items.filter((i) => i.category === activeCategory),
+    [items, activeCategory]
   );
 
   const getView = (id: string) => viewMode[id] ?? "preview";
@@ -259,7 +279,9 @@ export default function ShowcasePage() {
               Community Output Showcase
             </h1>
             <p className="text-sm text-[var(--mist)] max-w-3xl">
-              Opt-in showcase of top-rated model generations evaluated by the Verdict judge panel. Each card renders in a sandboxed isolated runtime.
+              {isLive
+                ? "Real benchmark generations evaluated by the Verdict judge panel. Each card renders in a sandboxed isolated runtime."
+                : "Opt-in showcase of top-rated model generations evaluated by the Verdict judge panel. Each card renders in a sandboxed isolated runtime."}
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--mist)] shrink-0">
@@ -270,7 +292,7 @@ export default function ShowcasePage() {
 
         {/* Category Filter Tabs */}
         <div className="flex flex-wrap gap-2 pt-2">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -283,7 +305,7 @@ export default function ShowcasePage() {
               {cat}
               {activeCategory === cat && cat !== "All" && (
                 <span className="ml-1.5 opacity-70">
-                  {SHOWCASE_ITEMS.filter((i) => i.category === cat).length}
+                  {items.filter((i) => i.category === cat).length}
                 </span>
               )}
             </button>

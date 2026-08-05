@@ -33,11 +33,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.engine
-    command: python -m tasks
+    command: celery -A tasks worker --loglevel=info
     environment:
-      DATABASE_URL: file:./dev.db
       REDIS_URL: redis://redis:6379
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-verdict-production-encryption-key-32b-secret}
     depends_on:
       - redis
 

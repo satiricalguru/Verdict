@@ -153,7 +153,8 @@ export default function ArenaPage() {
 
   const handleRunCustomMatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customPromptInput.trim()) return;
+    const promptText = customPromptInput.trim();
+    if (!promptText) return;
 
     if (!hasConnectedKeys) {
       setKeyNotice(
@@ -163,15 +164,61 @@ export default function ArenaPage() {
       return;
     }
 
+    if (!selectedAId || !selectedBId) {
+      setKeyNotice("Select two models before running a custom match.");
+      return;
+    }
+
     setIsGeneratingLive(true);
     setVoteNotice(null);
     setKeyNotice(null);
 
     try {
-      setPromptTitle(customPromptInput.trim());
-      await handleFetchMatch(selectedAId, selectedBId);
+      setPromptTitle(promptText);
+
+      // Execute both models live against the custom prompt in parallel.
+      const [resA, resB] = await Promise.all([
+        fetch("/api/runs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            modelId: selectedAId,
+            categories: ["frontend-ui"],
+            promptText,
+          }),
+        }),
+        fetch("/api/runs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            modelId: selectedBId,
+            categories: ["frontend-ui"],
+            promptText,
+          }),
+        }),
+      ]);
+
+      const dataA = resA.ok ? await resA.json() : null;
+      const dataB = resB.ok ? await resB.json() : null;
+
+      if (dataA?.model && dataB?.model) {
+        const codeA = dataA.rawOutput || modelA.code;
+        const codeB = dataB.rawOutput || modelB.code;
+
+        setModelA((prev) => ({ ...prev, code: codeA, name: dataA.model }));
+        setModelB((prev) => ({ ...prev, code: codeB, name: dataB.model }));
+        setVoted(false);
+        setBlindMode(matchMode === "blind");
+        setIsDemoMode(false);
+        setVoteNotice("✓ Live custom match complete — both models generated outputs for your prompt.");
+      } else {
+        setKeyNotice(
+          "Execution failed — check that your API key covers the selected models, then retry."
+        );
+      }
     } catch (err) {
       console.error("Live arena run error:", err);
+      setKeyNotice("Execution failed — the provider API is unreachable. Please retry.");
     } finally {
       setIsGeneratingLive(false);
     }

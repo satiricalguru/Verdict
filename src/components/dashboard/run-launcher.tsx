@@ -25,7 +25,6 @@ export default function RunLauncher({
     "frontend-ui",
     "game-dev",
   ]);
-  const [byokKey] = useState("sk-proj-default");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingModels, setLoadingModels] = useState(true);
 
@@ -76,7 +75,7 @@ export default function RunLauncher({
       const res = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: selectedModel, categories: selectedCategories, byokKey }),
+        body: JSON.stringify({ modelId: selectedModel, categories: selectedCategories }),
       });
       const data = await res.json();
       if (data.success && data.runId) {

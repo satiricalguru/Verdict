@@ -22,18 +22,7 @@ export async function GET(
   });
 
   if (!run) {
-    // If run ID doesn't exist yet, return active status structure
-    return NextResponse.json({
-      run: {
-        id,
-        model: "Claude Fable 5",
-        status: "complete",
-        costEstimate: 0.42,
-        startedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        samples: [],
-      },
-    });
+    return NextResponse.json({ error: "Run not found" }, { status: 404 });
   }
 
   return NextResponse.json({ run });

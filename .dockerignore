@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+.pnp
+.yarn
+
+# Next.js
+.next
+out
+build
+
+# Databases & local state
+*.db
+*.sqlite
+prisma/*.db
+
+# Env & secrets
+.env*
+!.env.example
+
+# Git & tooling
+.git
+.gitignore
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# Scraper artifacts
+scraper-output

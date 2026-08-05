@@ -17,4 +17,5 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-CMD ["npm", "run", "start"]
+# Initialize the SQLite database from the seeded market feed, then serve.
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run db:seed && npm run start"]

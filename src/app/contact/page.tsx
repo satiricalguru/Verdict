@@ -5,9 +5,20 @@ import { Mail, Send, CheckCircle2 } from "lucide-react";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // No mail backend exists yet — open the user's mail client pre-filled
+    // with their message so the form actually delivers.
+    const body = encodeURIComponent(`${message}\n\n— ${name} (${email})`);
+    const mailto = `mailto:verdict-bench@proton.me?subject=${encodeURIComponent(
+      subject || "Verdict feedback"
+    )}&body=${body}`;
+    window.location.href = mailto;
     setSubmitted(true);
   };
 
@@ -46,6 +57,8 @@ export default function ContactPage() {
               <input
                 type="text"
                 required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Your Name"
                 className="w-full p-2.5 text-sm bg-[var(--fog)] border border-[var(--border)] rounded-md text-[var(--ink)] focus:outline-none focus:border-[var(--signal)]"
               />
@@ -58,6 +71,8 @@ export default function ContactPage() {
               <input
                 type="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@domain.com"
                 className="w-full p-2.5 text-sm bg-[var(--fog)] border border-[var(--border)] rounded-md text-[var(--ink)] focus:outline-none focus:border-[var(--signal)]"
               />
@@ -70,6 +85,8 @@ export default function ContactPage() {
               <input
                 type="text"
                 required
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
                 placeholder="Model benchmark inquiry, self-host feedback..."
                 className="w-full p-2.5 text-sm bg-[var(--fog)] border border-[var(--border)] rounded-md text-[var(--ink)] focus:outline-none focus:border-[var(--signal)]"
               />
@@ -82,6 +99,8 @@ export default function ContactPage() {
               <textarea
                 rows={4}
                 required
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 placeholder="Write your message..."
                 className="w-full p-2.5 text-sm bg-[var(--fog)] border border-[var(--border)] rounded-md text-[var(--ink)] focus:outline-none focus:border-[var(--signal)]"
               />

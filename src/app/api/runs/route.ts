@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getRecentRuns } from "@/lib/models";
 import { executeBenchmarkRun } from "@/lib/engine";
+import { getCurrentUser } from "@/lib/auth";
 import crypto from "crypto";
 
 export async function GET() {
@@ -18,7 +19,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { modelId, categories, promptText } = body;
+    const { modelId, categories, promptText, byokKey } = body;
+
+    const user = await getCurrentUser();
 
     const model = await db.model.findFirst({
       where: {
@@ -55,12 +58,14 @@ export async function POST(request: Request) {
 
     const runId = `run-${crypto.randomUUID().substring(0, 8)}`;
     
-    // Execute benchmark evaluation through engine runner with custom prompt support
-    const execResult = await executeBenchmarkRun(model.id, prompt.id, undefined, promptText);
+    // Execute benchmark evaluation through engine runner with custom prompt support.
+    // Keys are scoped to the authenticated user or server env — never other users'.
+    const execResult = await executeBenchmarkRun(model.id, prompt.id, user?.id, promptText, byokKey);
 
     const run = await db.run.create({
       data: {
         id: runId,
+        userId: user?.id || null,
         modelId: model.id,
         status: "complete",
         costEstimate: execResult.costEstimate,
@@ -107,6 +112,7 @@ export async function POST(request: Request) {
       status: "complete",
       costEstimate: execResult.costEstimate,
       compositeScore: execResult.judgment.composite,
+      rawOutput: execResult.rawOutput,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to launch run";

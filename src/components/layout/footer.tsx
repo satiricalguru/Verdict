@@ -38,7 +38,7 @@ const FOOTER_LINKS = {
     { label: "Can I Run It?", href: "/compatibility" },
     { label: "Documentation", href: "/docs" },
     { label: "Self-Host Guide", href: "/self-host" },
-    { label: "API Reference", href: "/docs#api" },
+    { label: "API Reference", href: "/docs" },
   ],
   Company: [
     { label: "Pricing", href: "/pricing" },

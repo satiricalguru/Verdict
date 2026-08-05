@@ -146,11 +146,6 @@ body {
   transform: scale(1);
 }
 
-/* Stagger children */
-.stagger > * {
-  transition-delay: calc(var(--i, 0) * 0.08s);
-}
-
 /* =========== Hero entrance animation =========== */
 @keyframes heroFadeUp {
   from { opacity: 0; transform: translateY(24px); }
@@ -192,11 +187,5 @@ body {
 }
 .live-dot {
   animation: liveGlow 2s ease-in-out infinite;
-}
-
-/* =========== CTA radial pulse ring =========== */
-@keyframes ctaRing {
-  0%, 100% { transform: translateX(-50%) scale(1);   opacity: 0.3; }
-  50%       { transform: translateX(-50%) scale(1.7); opacity: 0; }
 }
 

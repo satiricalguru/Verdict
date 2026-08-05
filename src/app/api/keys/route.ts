@@ -34,17 +34,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Provider and key are required" }, { status: 400 });
     }
 
-    let user = await getCurrentUser();
+    const user = await getCurrentUser();
     if (!user) {
-      user = await db.user.findFirst();
-    }
-    if (!user) {
-      user = await db.user.create({
-        data: {
-          name: "Default Workspace",
-          email: "workspace@verdict.dev",
-        },
-      });
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
     const encrypted = encryptKey(key);

@@ -61,7 +61,7 @@ export default function SelfHostPage() {
 
         <div className="rounded-lg bg-[var(--fog)] border border-[var(--border)] p-4 font-mono text-xs text-[var(--ink)] space-y-3 overflow-x-auto">
           <div className="text-[var(--mist)] font-bold"># 1. Clone the open source repository</div>
-          <div className="text-[var(--signal)]">$ git clone https://github.com/verdict-ai/verdict.git && cd verdict</div>
+          <div className="text-[var(--signal)]">$ git clone https://github.com/satiricalguru/Verdict.git && cd Verdict</div>
 
           <div className="text-[var(--mist)] font-bold pt-2"># 2. Start the local benchmark stack</div>
           <div className="text-[var(--signal)]">$ docker compose up -d</div>

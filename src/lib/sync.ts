@@ -62,10 +62,15 @@ export async function syncLatestModels(force: boolean = false): Promise<SyncResu
       });
 
       if (existing) {
-        // Update existing model with the exact Artificial Analysis ranking & pricing
+        // Update existing model with the exact Artificial Analysis ranking,
+        // pricing, and capability metadata
         await db.model.update({
           where: { id: existing.id },
           data: {
+            name: item.name,
+            modelIdString: item.slug,
+            releaseDate: item.releaseDate ? new Date(item.releaseDate) : null,
+            isOpenWeight: item.isOpenWeight,
             composite: item.composite,
             priceInput: item.priceIn,
             priceOutput: item.priceOut,

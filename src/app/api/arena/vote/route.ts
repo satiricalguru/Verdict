@@ -25,13 +25,19 @@ export async function POST(request: Request) {
     const forwarded = request.headers.get("x-forwarded-for");
     const voterIp = forwarded?.split(",")[0]?.trim() || "unknown";
 
-    // Check for recent duplicate votes from same IP on same pair (within 30s)
+    // Optional: get authenticated user for tracking
+    const user = await getCurrentUser();
+    // Use the same voter identifier for both the duplicate check and the
+    // insert, so logged-in users can't bypass the rate limit via IP switching.
+    const voterId = user?.id || voterIp;
+
+    // Check for recent duplicate votes from same voter (within 30s)
     const recentCutoff = new Date(Date.now() - 30_000);
     const recentVote = await db.arenaMatch.findFirst({
       where: {
         modelAId,
         modelBId,
-        voterIp,
+        voterIp: voterId,
         createdAt: { gte: recentCutoff },
       },
     });
@@ -65,9 +71,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Optional: get authenticated user for tracking
-    const user = await getCurrentUser();
-
     const isWinnerA = winner === "A";
     const isTie = winner === "TIE";
     const isBad = winner === "BAD";
@@ -81,7 +84,7 @@ export async function POST(request: Request) {
         winner,
         votesA: isWinnerA ? 1 : 0,
         votesB: winner === "B" ? 1 : 0,
-        voterIp: user?.id || voterIp,
+        voterIp: voterId,
       },
     });
 

@@ -15,7 +15,8 @@ interface ModelRecommendation {
   priceOutput: number;
   isOpenWeight: boolean;
   contextWindow: string;
-  latencyAvg: number;
+  tokensPerSec: string;
+  parsedSpeed: number;
   matchScore: number;
   why: string;
 }
@@ -28,7 +29,9 @@ export default function ModelAdvisorPage() {
   const [priority, setPriority] = useState<"quality" | "cost" | "speed">("quality");
 
   useEffect(() => {
-    fetch("/api/models")
+    // /api/leaderboard carries the full market data (prices, context, speed)
+    // whereas /api/models only exposes id/name/slug/composite/isOpenWeight.
+    fetch("/api/leaderboard")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.models && data.models.length > 0) {
@@ -36,26 +39,32 @@ export default function ModelAdvisorPage() {
             (m: {
               id: string;
               name: string;
-              provider: { name: string } | string;
+              provider: string;
               slug: string;
               composite: number;
-              priceInput: number;
-              priceOutput: number;
+              priceInput: string;
+              priceOutput: string;
               isOpenWeight: boolean;
-              capabilities?: string;
+              contextWindow: string;
+              tokensPerSec: string;
             }) => {
-              const provName = typeof m.provider === "string" ? m.provider : m.provider?.name || "AI";
+              const parsePrice = (s: string) => {
+                const n = parseFloat(String(s).replace("$", ""));
+                return Number.isFinite(n) && n > 0 ? n : 0;
+              };
+              const speedMatch = String(m.tokensPerSec || "").match(/([\d.]+)/);
               return {
                 id: m.id,
                 name: m.name,
-                provider: provName,
+                provider: m.provider,
                 slug: m.slug,
                 composite: m.composite,
-                priceInput: m.priceInput || 1.0,
-                priceOutput: m.priceOutput || 3.0,
+                priceInput: parsePrice(m.priceInput),
+                priceOutput: parsePrice(m.priceOutput),
                 isOpenWeight: Boolean(m.isOpenWeight),
-                contextWindow: "1M tokens",
-                latencyAvg: 650,
+                contextWindow: m.contextWindow || "—",
+                tokensPerSec: m.tokensPerSec || "—",
+                parsedSpeed: speedMatch ? parseFloat(speedMatch[1]) : 0,
                 matchScore: Math.round(m.composite),
                 why: `Evaluated benchmark leader for ${taskCategory} generation with high composite rating.`,
               };
@@ -69,10 +78,10 @@ export default function ModelAdvisorPage() {
 
   const filteredModels = models
     .filter((m) => !requireOpenWeight || m.isOpenWeight)
-    .filter((m) => m.priceInput <= maxPrice)
+    .filter((m) => m.priceInput === 0 || m.priceInput <= maxPrice)
     .sort((a, b) => {
       if (priority === "cost") return a.priceInput - b.priceInput;
-      if (priority === "speed") return a.latencyAvg - b.latencyAvg;
+      if (priority === "speed") return b.parsedSpeed - a.parsedSpeed;
       return b.composite - a.composite;
     });
 
@@ -261,8 +270,8 @@ export default function ModelAdvisorPage() {
                   <span className="text-[var(--ink)] font-semibold">{model.contextWindow}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-[var(--mist)]/70 uppercase">Avg Latency</span>
-                  <span className="text-[var(--ink)] font-semibold">{model.latencyAvg} ms</span>
+                  <span className="block text-[10px] text-[var(--mist)]/70 uppercase">Avg Speed</span>
+                  <span className="text-[var(--ink)] font-semibold">{model.tokensPerSec}</span>
                 </div>
               </div>
 
